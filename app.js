@@ -27,10 +27,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/study', studyRouter);
-app.use('/chat/', chatRouter);
+app.use('/chat', chatRouter);
 app.use('/lecture', lectureRouter);
 app.use('/reservation', reservationRouter);
-app.use('./cafe', cafeRouter);
+app.use('/cafe', cafeRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
