@@ -11,8 +11,21 @@ router.post('/', async function(req, res, next) {
   res.json(queryResult.rows[0]);
 });
 
-router.get('/list', function(req, res, next) {
-  res.send('Success');
+router.get('/list', async function(req, res, next) {
+  let sql = 'select id, category, title, studyGroupNumTotal, studyGroupNumCurrent, imageUri from study'
+  let recodes = await dbQuery(sql);
+
+  recodes = recodes.rows
+
+  for (let recode of recodes) {
+    sql = 'select tagName from studytag ';
+    sql += `where studyId in (select studyId from studyTag where studyId = ${recode['id']})`;
+    let queryResult = await dbQuery(sql);
+    recode.tagName = queryResult.rows;
+  }
+
+  console.log(recodes[0].tagName);
+  res.json(recodes);
 });
 
 router.get('/myLecture', function(req, res, next) {
