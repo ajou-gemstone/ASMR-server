@@ -22,37 +22,37 @@ router.get('/list', async function(req, res, next) {
   let lectureRoomArray = new Array();
   let reservedRoomArray = new Array();
   let resultList;
-  var stateList = ''
+  var stateList = '';
 
   date = date.split('-');
   date = moment([date[0], date[1] - 1, date[2]]).format("YYYY-MM-DD");
 
   for (var i = 0; i < building.length; i++) {
-    let sql = `select lectureRoomNum from lectureRoom where buildingName='${building[i]}'`
+    let sql = `select lectureRoomId from lectureRoom where buildingName='${building[i]}'`
     queryResult = await dbQuery(sql);
     queryResult = queryResult.rows;
 
     for (let query of queryResult) {
-      lectureRoomArray.push(query.lectureRoomNum);
+      lectureRoomArray.push(query.lectureRoomId);
     }
   }
 
   for (var i = 0; i < building.length; i++) {
-    let sql = `SELECT lectureroomdescription.TIME, lectureroomdescription.roomStatus, lectureRoom.lectureRoomNum FROM lectureroom, lectureroomdescription WHERE lectureroom.buildingName='${building[i]}' AND lectureroomdescription.date='${date}' AND lectureroom.id=lectureroomdescription.lectureRoomId`
+    let sql = `SELECT lectureroomdescription.TIME, lectureroomdescription.roomStatus, lectureRoom.lectureRoomId FROM lectureroom, lectureroomdescription WHERE lectureroom.buildingName='${building[i]}' AND lectureroomdescription.date='${date}' AND lectureroom.id=lectureroomdescription.lectureRoomId`
     recodes = await dbQuery(sql);
     recodes = recodes.rows;
 
     var array = new Array();
     for (var j = 0; j < recodes.length; j++) {
-      array.push(recodes[j]['lectureRoomNum'])
-      reservedRoomArray.push(recodes[j]['lectureRoomNum'])
+      array.push(recodes[j]['lectureRoomId'])
+      reservedRoomArray.push(recodes[j]['lectureRoomId'])
     }
 
     array = Array.from(new Set(array));
 
     for (var l = 0; l < array.length; l++) {
       var result = recodes.filter(function(recode) {
-        return recode.lectureRoomNum == array[l];
+        return recode.lectureRoomId == array[l];
       });
 
       var sortingField = "TIME";
@@ -62,8 +62,9 @@ router.get('/list', async function(req, res, next) {
       });
 
       tableList = timeTable(result, date, startTime, lastTime);
+
       resultList = {
-        lectureroom: result[0].lectureRoomNum,
+        lectureroom: result[0].lectureRoomId,
         stateList: tableList
       }
 
@@ -86,6 +87,10 @@ router.get('/list', async function(req, res, next) {
   }
 
   res.json(jsonResult);
+});
+
+router.get('/', function(req, res, next) {
+
 });
 
 module.exports = router;

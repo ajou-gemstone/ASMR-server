@@ -1,9 +1,9 @@
 module.exports = {
     //connectionLimit: 10,
-    host: 'localhost',
+    host: '13.125.206.202',
     port: '3306',
-    user: 'root',
-    password: 'hjw201520987!',
+    user: 'asmr',
+    password: 'asmr!',
     database: 'ASMR',
     debug: false
 };

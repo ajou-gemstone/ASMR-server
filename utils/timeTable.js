@@ -6,6 +6,9 @@ function timeTable(tableList, date, startTime, lastTime) {
   ];
   var day;
 
+  startTime = parseInt(startTime);
+  lastTime = parseInt(lastTime);
+
   timeTable = timeTable.splice(startTime, lastTime + 1);
 
   var tableArray = new Array();
