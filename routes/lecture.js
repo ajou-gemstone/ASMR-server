@@ -8,13 +8,13 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/info', async function(req, res, next) {
-  var lectureRoomId = req.query.lectureroom;
+  var lectureRoomId = req.query.lectureRoom;
 
   let sql = `select lectureRoomNum from lectureroom where lectureRoomId='${lectureRoomId}'`
   queryResult = await dbQuery(sql);
   queryResult = queryResult.rows;
 
-  res.json(queryResult);
+  res.json(queryResult[0]);
 });
 
 module.exports = router;

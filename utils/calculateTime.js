@@ -13,6 +13,10 @@ function calculateTime(date, startTime, lastTime) {
     day = 'D';
   } else if (dayOfWeek == '금') {
     day = 'E';
+  } else if (dayOfWeek == '토') {
+    day = 'F';
+  } else if (dayOfWeek == '일') {
+    day = 'G';
   }
 
   return day;
