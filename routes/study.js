@@ -4,10 +4,7 @@ var dbQuery = require("../database/promiseQuery.js");
 
 /* GET home page. */
 router.post('/', async function(req, res, next) {
-  console.log(req.body.id);
-  console.log(req.body.pw);
   let queryResult = await dbQuery('select * from study');
-  console.log('success');
   res.json(queryResult.rows[0]);
 });
 

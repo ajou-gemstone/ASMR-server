@@ -159,7 +159,6 @@ router.get('/info', async function(req, res, next) {
 });
 
 router.get('/myInfo', async function(req, res, next) {
-  var date = req.query.date;
   var tense = req.query.tense;
   var userId = req.query.userId;
   var reservationList = new Array();
