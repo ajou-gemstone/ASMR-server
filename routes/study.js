@@ -24,7 +24,6 @@ router.get('/list', async function(req, res, next) {
     recode.tagName = queryResult.rows;
   }
 
-  console.log(recodes[0].tagName);
   res.json(recodes);
 });
 
