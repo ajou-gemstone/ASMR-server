@@ -71,7 +71,7 @@ router.get('/myStudy', function(req, res, next) {
   res.send('Success');
 });
 
-router.post('/create', function(req, res, next) {
+router.post('/create', async function(req, res, next) {
   var leaderId = req.body.leaderId;
   var name = req.body.name;
   var category = req.body.category;
@@ -101,7 +101,7 @@ router.post('/create', function(req, res, next) {
   });
 });
 
-router.post('/register', function(req, res, next) {
+router.post('/register', async function(req, res, next) {
   var groupId = req.body.groupId;
   var userId = req.body.userId;
 
