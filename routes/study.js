@@ -109,7 +109,7 @@ router.post('/register', async function(req, res, next) {
   let recodes = await dbQuery(sql);
 
   sql = `update study set studyGroupNumCurrent = studyGroupNumCurrent+1 where id=${groupId}`;
-  let recodes = await dbQuery(sql);
+  recodes = await dbQuery(sql);
 
   res.json({
     response: 'success'
