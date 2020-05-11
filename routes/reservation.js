@@ -198,6 +198,7 @@ router.get('/myInfo', async function(req, res, next) {
     recode[0].lastTime = timeList[timeList.length - 1];
 
     resultArray.push(recode[0]);
+    timeList = [];
   }
 
   if (tense == 'future') {

@@ -11,6 +11,7 @@ var chatRouter = require('./routes/chat');
 var lectureRouter = require('./routes/lecture');
 var reservationRouter = require('./routes/reservation');
 var cafeRouter = require('./routes/cafe');
+var userRouter = require('./routes/user');
 
 var app = express();
 
@@ -31,6 +32,7 @@ app.use('/chat', chatRouter);
 app.use('/lecture', lectureRouter);
 app.use('/reservation', reservationRouter);
 app.use('/cafe', cafeRouter);
+app.use('/user', userRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
