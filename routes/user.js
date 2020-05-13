@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var dbQuery = require("../database/promiseQuery.js");
+var crypto = require('crypto');
 
 /* GET home page. */
 router.get('/', async function(req, res, next) {
@@ -28,17 +29,18 @@ router.post('/login', async function(req, res, next) {
   var userId = req.body.userId;
   var password = req.body.password;
 
-  let sql = `select id from user where userId='${userId}' and userPassword='${password}'`;
+  let sql = `select id, salt, userPassword from user where userId='${userId}'`;
   let recodes = await dbQuery(sql);
   recodes = recodes.rows;
 
-  if (recodes.length == 0) {
-    res.json({
-      id: '-1'
-    });
-  } else {
-    res.json(
-      recodes[0]);
+  let hashPassword = crypto.createHash("sha512").update(password+recodes[0].salt).digest("hex");
+
+  if (hashPassword == recodes[0].userPassword) {
+    res.json({id: recodes[0].id});
+  }
+
+  else{
+    res.json({id: -1});
   }
 });
 
@@ -51,19 +53,28 @@ router.post('/signup', async function(req, res, next) {
   var lecture = req.body.lecture;
   var num;
   var lectureList = new Array();
+  var lectureArray = new Array();
 
-  let sql = `select count(*) as num from user`;
+  if(typeof(lecture)=='string'){
+    lectureArray.push(lecture);
+    lecture = lectureArray;
+  }
+
+  let sql = `select max(id) as num from user`;
   let recodes = await dbQuery(sql);
   recodes = recodes.rows;
 
   num = recodes[0].num;
   num += 1;
 
-  sql = `insert into user(id, name, userId, userPassword, email, userType, photo, phoneNumber, score, studentNum) values(${num}, '${name}', '${userId}', '${password}', '${email}', 1, null, null, null, '${studentNumber}')`
+  let salt = Math.round((new Date().valueOf() * Math.random())) + "";
+  let hashPassword = crypto.createHash("sha512").update(password + salt).digest("hex");
+
+  sql = `insert into user(id, name, userId, userPassword, email, userType, photo, phoneNumber, score, studentNum, salt) values(${num}, '${name}', '${userId}', '${hashPassword}', '${email}', 1, null, null, null, '${studentNumber}', '${salt}')`
   recodes = await dbQuery(sql);
 
   for (var i = 0; i < lecture.length; i++) {
-    sql = `select id from lecture where id=${lecture[i]}`
+    sql = `select id from lecture where lectureName='${lecture[i]}'`
     recodes = await dbQuery(sql);
     recodes = recodes.rows;
     lectureList.push(recodes[i].id);

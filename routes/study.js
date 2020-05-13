@@ -73,7 +73,6 @@ router.get('/myStudy', function(req, res, next) {
 
 router.post('/create', async function(req, res, next) {
   var leaderId = req.body.leaderId;
-  var name = req.body.name;
   var category = req.body.category;
   var title = req.body.title;
   var textBody = req.body.textBody;
@@ -81,14 +80,14 @@ router.post('/create', async function(req, res, next) {
   var studyGroupNumTot = req.body.studyGroupNumTot;
   var num;
 
-  let sql = `select count(*) as num from study`;
+  let sql = `select max(id) as num from study`;
   let recodes = await dbQuery(sql);
   recodes = recodes.rows;
 
   num = recodes[0].num;
   num += 1;
 
-  sql = `insert into study(id, name, category, title, textBody, classCode, studyGroupNumTotal, studyGroupNumCurrent, imageUri, leaderId) values(${num}, '${name}', '${title}', '${textBody}', 0, '${studyGroupNumTot}', 0, null, ${leaderId})`;
+  sql = `insert into study(id, name, category, title, textBody, classCode, studyGroupNumTotal, studyGroupNumCurrent, imageUri, leaderId) values(${num}, null, '${category}', '${title}', '${textBody}', 0, '${studyGroupNumTot}', 0, null, ${leaderId})`;
   recodes = await dbQuery(sql);
 
   for(var i=0;i<tagName.length;i++){

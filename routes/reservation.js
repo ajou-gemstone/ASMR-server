@@ -6,6 +6,7 @@ var dbQuery = require("../database/promiseQuery.js");
 var timeTable = require('../utils/timeTable');
 var evaluateDate = require('../utils/date');
 var nullCheck = require('../utils/nullCheck');
+var timeParser = require('../utils/timeParser');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -161,6 +162,7 @@ router.get('/info', async function(req, res, next) {
 router.get('/myInfo', async function(req, res, next) {
   var tense = req.query.tense;
   var userId = req.query.userId;
+  var buildingName = req.query.buildingName;
   var reservationList = new Array();
   var timeList = new Array();
   var resultArray = new Array();
@@ -226,6 +228,76 @@ router.get('/myInfo', async function(req, res, next) {
   res.json(resultList);
 });
 
+router.get('/guardBuildingInfo', async function(req, res, next) {
+  var tense = req.query.tense;
+  var buildingName = req.query.buildingName;
+  var buildingList = new Array();
+  var timeList = new Array();
+  var resultArray = new Array();
+  var resultList = new Array();
+
+  let sql = `select id from lectureRoom where buildingName='${buildingName}'`;
+  var recodes = await dbQuery(sql);
+  recodes = recodes.rows;
+
+  for (var i = 0; i < recodes.length; i++) {
+    buildingList.push(recodes[i].id)
+  }
+
+  for (var i = 0; i < buildingList.length; i++) {
+    sql = `SELECT reservation.id as reservationId, lectureroom.lectureRoomId from reservation, lectureroom where lectureroom.id=${buildingList[i]} and reservation.lectureRoomId=lectureroom.id`;
+    var recode = await dbQuery(sql);
+    recode = recode.rows;
+
+    for(var j=0;j<recode.length;j++){
+      sql = `select date, time from reservationdescription where reservationid=${recode[j].reservationId}`;
+      var queryResult = await dbQuery(sql);
+      queryResult = queryResult.rows;
+
+      for (var l = 0; l < queryResult.length; l++) {
+        timeList.push(queryResult[l].time);
+      }
+
+      timeList.sort(function(a, b) {
+        return a - b;
+      });
+
+      recode[j].date = queryResult[0].date;
+      recode[j].day = calculateTime(queryResult[0].date);
+
+      recode[j].startTime = timeList[0];
+      recode[j].lastTime = timeList[timeList.length - 1];
+
+      resultArray.push(recode[j]);
+      timeList = [];
+    }
+  }
+
+  if (tense == 'future') {
+    for (var i = 0; i < resultArray.length; i++) {
+      if (evaluateDate(resultArray[i].date) > evaluateDate(new Date())) {
+        resultList.push(resultArray[i])
+      }
+    }
+  }
+  else if(tense=='today'){
+    for (var i = 0; i < resultArray.length; i++) {
+      if (evaluateDate(resultArray[i].date) == evaluateDate(new Date())) {
+        resultList.push(resultArray[i])
+      }
+    }
+  }
+  else {
+    for (var i = 0; i < resultArray.length; i++) {
+      if (evaluateDate(resultArray[i].date) < evaluateDate(new Date())) {
+        resultList.push(resultArray[i])
+      }
+    }
+  }
+
+  res.json(resultList);
+});
+
 router.get('/buildingInfo', async function(req, res, next) {
   var buildingName = req.query.buildingName;
   var floor = req.query.floor;
@@ -235,58 +307,81 @@ router.get('/buildingInfo', async function(req, res, next) {
   var resultArray = new Array();
   var timeList = new Array();
   var userList = new Array();
+  var count = 0;
+  var resultarray = new Array();
+
+  var time = timeParser();
 
   let sql = `select id, lectureRoomId from lectureRoom where buildingName='${buildingName}' and floor=${floor}`;
-  var recodes = await dbQuery(sql);
+  recodes = await dbQuery(sql);
   recodes = recodes.rows;
 
-  id = recodes[0].id;
-  lectureRoomId = recodes[0].lectureRoomId;
+  for(var l=0;l<recodes.length;l++){
+    id = recodes[l].id;
+    lectureRoomId = recodes[l].lectureRoomId;
 
-  sql = `select id from reservation where lectureRoomId=${id}`;
-  recode = await dbQuery(sql);
-  recode = recode.rows;
+    sql = `select id from reservation where lectureRoomId=${id}`;
+    recode = await dbQuery(sql);
+    recode = recode.rows;
 
-  for (var i = 0; i < recode.length; i++) {
-    reservationList.push(recode[i].id);
-  }
-
-  for (var i = 0; i < reservationList.length; i++) {
-    sql = `select reservationType from reservation where id=${reservationList[i]}`;
-    queryList = await dbQuery(sql);
-    queryList = queryList.rows;
-
-    sql = `select time from reservationdescription where reservationid=${reservationList[i]}`;
-    var queryResult = await dbQuery(sql);
-    queryResult = queryResult.rows;
-
-    for (var j = 0; j < queryResult.length; j++) {
-      timeList.push(queryResult[j].time)
+    for (var i = 0; i < recode.length; i++) {
+      reservationList.push(recode[i].id);
     }
 
-    timeList.sort(function(a, b) {
-      return a - b;
-    });
+    for (var i = 0; i < reservationList.length; i++) {
+      sql = `select reservationType from reservation where id=${reservationList[i]}`;
+      queryList = await dbQuery(sql);
+      queryList = queryList.rows;
 
-    sql = `select userId from userreservationlist where reservationid=${reservationList[i]}`;
-    var query = await dbQuery(sql);
-    query = query.rows;
+      sql = `select time from reservationdescription where reservationid=${reservationList[i]}`;
+      var queryResult = await dbQuery(sql);
+      queryResult = queryResult.rows;
 
-    for (var j = 0; j < query.length; j++) {
-      userList.push(query[j].userId);
+      for (var j = 0; j < queryResult.length; j++) {
+        timeList.push(queryResult[j].time)
+      }
+
+      timeList.sort(function(a, b) {
+        return a - b;
+      });
+
+      sql = `select userId from userreservationlist where reservationid=${reservationList[i]}`;
+      var query = await dbQuery(sql);
+      query = query.rows;
+
+      for (var j = 0; j < query.length; j++) {
+        userList.push(query[j].userId);
+      }
+
+      queryList[0].lectureRoomId = id;
+      queryList[0].lectureRoom = lectureRoomId;
+      queryList[0].reservationId = reservationList[i];
+      queryList[0].startTime = timeList[0];
+      queryList[0].lastTime = timeList[timeList.length - 1];
+      queryList[0].userId = userList;
+
+      resultArray.push(queryList[0]);
+
+      reservationList = [];
+      timeList = [];
+      userList = [];
     }
-
-    queryList[0].lectureRoomId = id;
-    queryList[0].lectureRoom = lectureRoomId;
-    queryList[0].reservationId = reservationList[i];
-    queryList[0].startTime = timeList[0];
-    queryList[0].lastTime = timeList[timeList.length - 1];
-    queryList[0].userId = userList;
-
-    resultArray.push(queryList[0]);
   }
 
-  res.json(resultArray);
+  for(var i=0;i<resultArray.length;i++){
+    for(var j=resultArray[i].startTime;j<=resultArray[i].lastTime;j++){
+      if(j==time){
+        count++;
+        break;
+      }
+    }
+    if(count!=0){
+      resultarray.push(resultArray[i]);
+    }
+    count=0;
+  }
+
+  res.json(resultarray);
 })
 
 router.get('/guardInfo', async function(req, res, next) {
@@ -320,7 +415,7 @@ router.post('/create', async function(req, res, next) {
     randomAfter = 1;
   }
 
-  let sql = 'select count(*) as num from reservation';
+  let sql = 'select max(id) as num from reservation';
   var queryResult = await dbQuery(sql);
   queryResult = queryResult.rows;
 
