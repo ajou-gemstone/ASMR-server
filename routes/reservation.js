@@ -167,6 +167,7 @@ router.get('/myInfo', async function(req, res, next) {
   var timeList = new Array();
   var resultArray = new Array();
   var resultList = new Array();
+  var result = new Array();
 
   let sql = `select reservationId from userreservationlist where userId=${userId}`;
   var recodes = await dbQuery(sql);
@@ -177,7 +178,7 @@ router.get('/myInfo', async function(req, res, next) {
   }
 
   for (var i = 0; i < reservationList.length; i++) {
-    sql = `SELECT reservation.id as reservationId, (SELECT lectureroom.lectureRoomId FROM lectureroom where lectureroom.id=reservation.lectureRoomId) AS lectureRoom from reservation where reservation.id=${reservationList[i]}`;
+    sql = `SELECT reservation.id as reservationId, leaderId, (SELECT lectureroom.lectureRoomId FROM lectureroom where lectureroom.id=reservation.lectureRoomId) AS lectureRoom from reservation where reservation.id=${reservationList[i]}`;
     var recode = await dbQuery(sql);
     recode = recode.rows;
 
@@ -203,24 +204,30 @@ router.get('/myInfo', async function(req, res, next) {
     timeList = [];
   }
 
+  for(var i=0;i<resultArray.length;i++){
+    if(resultArray[i].leaderId==userId){
+      result.push(resultArray[i])
+    }
+  }
+
   if (tense == 'future') {
-    for (var i = 0; i < resultArray.length; i++) {
-      if (evaluateDate(resultArray[i].date) > evaluateDate(new Date())) {
-        resultList.push(resultArray[i])
+    for (var i = 0; i < result.length; i++) {
+      if (evaluateDate(result[i].date) > evaluateDate(new Date())) {
+        resultList.push(result[i])
       }
     }
   }
   else if(tense=='today'){
-    for (var i = 0; i < resultArray.length; i++) {
-      if (evaluateDate(resultArray[i].date) == evaluateDate(new Date())) {
-        resultList.push(resultArray[i])
+    for (var i = 0; i < result.length; i++) {
+      if (evaluateDate(result[i].date) == evaluateDate(new Date())) {
+        resultList.push(result[i])
       }
     }
   }
   else {
-    for (var i = 0; i < resultArray.length; i++) {
-      if (evaluateDate(resultArray[i].date) < evaluateDate(new Date())) {
-        resultList.push(resultArray[i])
+    for (var i = 0; i < result.length; i++) {
+      if (evaluateDate(result[i].date) < evaluateDate(new Date())) {
+        resultList.push(result[i])
       }
     }
   }
@@ -245,7 +252,7 @@ router.get('/guardBuildingInfo', async function(req, res, next) {
   }
 
   for (var i = 0; i < buildingList.length; i++) {
-    sql = `SELECT reservation.id as reservationId, lectureroom.lectureRoomId from reservation, lectureroom where lectureroom.id=${buildingList[i]} and reservation.lectureRoomId=lectureroom.id`;
+    sql = `SELECT reservation.id as reservationId, lectureroom.lectureRoomId as lectureRoom from reservation, lectureroom where lectureroom.id=${buildingList[i]} and reservation.lectureRoomId=lectureroom.id`;
     var recode = await dbQuery(sql);
     recode = recode.rows;
 
@@ -438,7 +445,7 @@ router.post('/create', async function(req, res, next) {
   day = calculateTime(date);
 
   for (var i = startTime; i <= lastTime; i++) {
-    sql = `insert into lectureroomdescription (lectureId, lectureRoomId, lectureTime, time, semester, roomStatus, date, day) values(0, ${lectureRoom}, 0, ${i}, '2020-1', 'R', '${date}', '${day}')`
+    sql = `insert into lectureroomdescription (lectureId, lectureRoomId, lectureTime, time, semester, roomStatus, date, day, reservationId) values(0, ${lectureRoom}, 0, ${i}, '2020-1', 'R', '${date}', '${day}', ${num})`
     queryResult = await dbQuery(sql);
   }
 
@@ -462,12 +469,11 @@ router.post('/updateInfo', async function(req, res, next) {
 
   let sql = `update reservation set perpose = '${reservationIntent}', reservationNum = '${userClassofsNum}' where id=${reservationId}`;
   var queryResult = await dbQuery(sql);
-
   for (var i = 0; i < userClassofs.length; i++) {
-    sql = `select id from user where studentNum='${userClassofs}'`
+    sql = `select id from user where studentNum='${userClassofs[i]}'`
     queryResult = await dbQuery(sql);
     queryResult = queryResult.rows;
-    studentId.push(queryResult[i]['id']);
+    studentId.push(queryResult[0]['id']);
   }
 
   for (var i = 0; i < userClassofs.length; i++) {
@@ -516,6 +522,9 @@ router.post('/delete', async function(req, res, next) {
   queryResult = await dbQuery(sql);
 
   sql = `delete from reservation where id=${reservationId}`;
+  queryResult = await dbQuery(sql);
+
+  sql = `delete from lectureroomdescription where reservationId=${reservationId}`;
   queryResult = await dbQuery(sql);
 
   res.json({

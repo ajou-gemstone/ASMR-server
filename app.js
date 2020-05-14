@@ -13,6 +13,13 @@ var reservationRouter = require('./routes/reservation');
 var cafeRouter = require('./routes/cafe');
 var userRouter = require('./routes/user');
 
+const schedule = require('node-schedule');
+
+const j = schedule.scheduleJob('00 * * * * *', function(){
+  console.log(new Date());
+  console.log('매 10초에 실행');
+});
+
 var app = express();
 
 // view engine setup

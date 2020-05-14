@@ -63,6 +63,32 @@ router.get('/list', async function(req, res, next) {
   res.json(recodes);
 });
 
+router.get('/mylist', async function(req, res, next) {
+  var userId = req.query.userId;
+  let sql = `select studyId from userstudylist where userId=${userId}`;
+  let recodes = await dbQuery(sql);
+  let querys;
+  let queryResult
+
+  recodes = recodes.rows
+
+  for(var i=0;i<recodes.length;i++){
+    sql = `select id, title, studyGroupNumTotal, studyGroupNumCurrent from study where id=${recodes[i].studyId}`;
+    querys = await dbQuery(sql);
+
+    querys = querys.rows;
+
+    for (let query of querys) {
+      sql = 'select tagName from studytag ';
+      sql += `where studyId in (select studyId from studyTag where studyId = ${query['id']})`;
+      queryResult = await dbQuery(sql);
+      query.tagName = queryResult.rows;
+    }
+  }
+
+  res.json(querys);
+});
+
 router.get('/myLecture', function(req, res, next) {
   res.send('Success');
 });
@@ -72,13 +98,19 @@ router.get('/myStudy', function(req, res, next) {
 });
 
 router.post('/create', async function(req, res, next) {
-  var leaderId = req.body.leaderId;
+  var leaderId = req.body.userId;
   var category = req.body.category;
   var title = req.body.title;
   var textBody = req.body.textBody;
   var tagName = req.body.tagName;
   var studyGroupNumTot = req.body.studyGroupNumTot;
   var num;
+  var tagArray = new Array();
+
+  if (typeof(tagName) == 'string') {
+    tagArray.push(tagName);
+    tagName = tagArray;
+  }
 
   let sql = `select max(id) as num from study`;
   let recodes = await dbQuery(sql);
@@ -87,13 +119,16 @@ router.post('/create', async function(req, res, next) {
   num = recodes[0].num;
   num += 1;
 
-  sql = `insert into study(id, name, category, title, textBody, classCode, studyGroupNumTotal, studyGroupNumCurrent, imageUri, leaderId) values(${num}, null, '${category}', '${title}', '${textBody}', 0, '${studyGroupNumTot}', 0, null, ${leaderId})`;
+  sql = `insert into study(id, name, category, title, textBody, classCode, studyGroupNumTotal, studyGroupNumCurrent, imageUri, leaderId) values(${num}, null, '${category}', '${title}', '${textBody}', 0, '${studyGroupNumTot}', 1, null, ${leaderId})`;
   recodes = await dbQuery(sql);
 
   for(var i=0;i<tagName.length;i++){
     sql = `insert into studytag(studyId, tagName) values(${num}, '${tagName[i]}')`;
     recodes = await dbQuery(sql);
   }
+
+  sql = `insert into userstudylist(studyId, userId) values(${num}, '${leaderId}')`;
+  recodes = await dbQuery(sql);
 
   res.json({
     response: 'success'

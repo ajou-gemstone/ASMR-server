@@ -8,7 +8,7 @@ router.get('/', async function(req, res, next) {
   var userId = req.query.userId;
   var lectureList = new Array();
 
-  let sql = `select name, userType, email from user where id=${userId}`
+  let sql = `select name, userType, email, studentNum from user where id=${userId}`
   let recodes = await dbQuery(sql);
   recodes = recodes.rows;
 
@@ -44,6 +44,26 @@ router.post('/login', async function(req, res, next) {
   }
 });
 
+router.post('/confirm', async function(req, res, next) {
+  var userId = req.body.userId;
+
+  let sql = `select userId from user where userId='${userId}'`;
+  let recodes = await dbQuery(sql);
+  recodes = recodes.rows;
+
+  if(recodes.length==0){
+    res.json({
+      response: 'success'
+    });
+  }
+
+  else{
+    res.json({
+      response: 'fail'
+    });
+  }
+});
+
 router.post('/signup', async function(req, res, next) {
   var userId = req.body.userId;
   var password = req.body.password;
@@ -70,14 +90,14 @@ router.post('/signup', async function(req, res, next) {
   let salt = Math.round((new Date().valueOf() * Math.random())) + "";
   let hashPassword = crypto.createHash("sha512").update(password + salt).digest("hex");
 
-  sql = `insert into user(id, name, userId, userPassword, email, userType, photo, phoneNumber, score, studentNum, salt) values(${num}, '${name}', '${userId}', '${hashPassword}', '${email}', 1, null, null, null, '${studentNumber}', '${salt}')`
+  sql = `insert into user(id, name, userId, userPassword, email, userType, photo, phoneNumber, score, studentNum, salt) values(${num}, '${name}', '${userId}', '${hashPassword}', '${email}', 0, null, null, null, '${studentNumber}', '${salt}')`
   recodes = await dbQuery(sql);
 
   for (var i = 0; i < lecture.length; i++) {
     sql = `select id from lecture where lectureName='${lecture[i]}'`
     recodes = await dbQuery(sql);
     recodes = recodes.rows;
-    lectureList.push(recodes[i].id);
+    lectureList.push(recodes[0].id);
   }
 
   for (var i = 0; i < lectureList.length; i++) {
