@@ -7,7 +7,7 @@ router.get('/', async function(req, res, next) {
   var groupId = req.query.groupId;
   var userList = new Array();
 
-  let sql = `select title, textBody, studyGroupNumTotal, studyGroupNumCurrent, leaderId from study where id=${groupId}`;
+  let sql = `select title, textBody, studyGroupNumTotal, studyGroupNumCurrent, leaderId from study where id='${groupId}'`;
   let recodes = await dbQuery(sql);
   recodes = recodes.rows;
 
@@ -48,7 +48,7 @@ router.get('/', async function(req, res, next) {
 });
 
 router.get('/list', async function(req, res, next) {
-  let sql = 'select id, category, studyGroupNumTotal, studyGroupNumCurrent, imageUri from study';
+  let sql = 'select id, title, category, studyGroupNumTotal, studyGroupNumCurrent, imageUri from study';
   let recodes = await dbQuery(sql);
 
   recodes = recodes.rows
