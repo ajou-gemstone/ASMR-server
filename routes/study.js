@@ -86,9 +86,15 @@ router.get('/mylist', async function(req, res, next) {
       queryResult = await dbQuery(sql);
       query.tagName = queryResult.rows;
     }
+
+    recodes[i].id=querys[0].id;
+    recodes[i].title=querys[0].title;
+    recodes[i].studyGroupNumTotal=querys[0].studyGroupNumTotal;
+    recodes[i].studyGroupNumCurrent=querys[0].studyGroupNumCurrent;
+    recodes[i].tagName=querys[0].tagName;
   }
 
-  res.json(querys);
+  res.json(recodes);
 });
 
 router.get('/myLecture', function(req, res, next) {
@@ -146,6 +152,34 @@ router.post('/register', async function(req, res, next) {
 
   sql = `update study set studyGroupNumCurrent = studyGroupNumCurrent+1 where id=${groupId}`;
   recodes = await dbQuery(sql);
+
+  res.json({
+    response: 'success'
+  });
+});
+
+router.post('/edit', async function(req, res, next) {
+  var groupId = req.body.groupId;
+  var title = req.body.title;
+  var textBody = req.body.textBody;
+  var tagName = req.body.tagName;
+  var studyGroupNumTot = req.body.studyGroupNumTot;
+
+  if (typeof(tagName) == 'string') {
+    tagArray.push(tagName);
+    tagName = tagArray;
+  }
+
+  let sql = `update study set title='${title}', textBody='${textBody}', studyGroupNumTot='${studyGroupNumTot}' where id=${groupId}`;
+  let recodes = await dbQuery(sql);
+
+  sql = `delete from studytag where studyId=${groupId}`;
+  recodes = await dbQuery(sql);
+
+  for(var i=0;i<tagName.length;i++){
+    sql = `insert into studytag(studyId, tagName) values(${groupId}, '${tagName[i]}')`;
+    recodes = await dbQuery(sql);
+  }
 
   res.json({
     response: 'success'
