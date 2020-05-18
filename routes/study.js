@@ -21,7 +21,7 @@ router.get('/', async function(req, res, next) {
   queryResult = queryResult.rows;
 
   for (var i = 0; i < queryResult.length; i++) {
-    sql = `select name from user where id = ${queryResult[i].userId}`;
+    sql = `select name, studentNum from user where id = ${queryResult[i].userId}`;
     query = await dbQuery(sql);
     query = query.rows;
 
@@ -29,14 +29,16 @@ router.get('/', async function(req, res, next) {
       userList.push({
         userId: queryResult[i].userId,
         name: query[0].name,
-        leader: 1
+        leader: 1,
+        studentNum: query[0].studentNum
       });
     }
     else{
       userList.push({
         userId: queryResult[i].userId,
         name: query[0].name,
-        leader: 0
+        leader: 0,
+        studentNum: query[0].studentNum
       });
     }
   }

@@ -413,6 +413,8 @@ router.post('/create', async function(req, res, next) {
   var leaderId = req.body.userId;
   var randomAfter = req.body.randomAfter;
   var day;
+  var dateParser;
+  var tmp;
 
   leaderId = parseInt(leaderId);
 
@@ -434,8 +436,18 @@ router.post('/create', async function(req, res, next) {
   var queryResult = queryResult.rows;
   lectureRoom = queryResult[0]["id"];
 
-  sql = `insert into reservation (id, beforeUri, afterUri, beforeTime, afterTime, leaderId, perpose, score, scoreReason, guardId, reservationType, reservationNum, randomStatus, priority, lectureRoomId) values(${num}, null, null, '${startTime}',' ${lastTime}', ${leaderId}, null, null, null, null, 'R', null, ${randomAfter}, null, ${lectureRoom})`
-  queryResult = await dbQuery(sql);
+  tmp = date.split('-');
+  dateParser = tmp[0]+tmp[1]+tmp[2];
+
+  if(dateParser-evaluateDate(new Date())<=3){
+    sql = `insert into reservation (id, beforeUri, afterUri, beforeTime, afterTime, leaderId, perpose, score, scoreReason, guardId, reservationType, reservationNum, randomStatus, priority, lectureRoomId) values(${num}, null, null, '${startTime}',' ${lastTime}', ${leaderId}, null, null, null, null, 'R', null, ${randomAfter}, null, ${lectureRoom})`
+    queryResult = await dbQuery(sql);
+  }
+
+  else{
+    sql = `insert into reservation (id, beforeUri, afterUri, beforeTime, afterTime, leaderId, perpose, score, scoreReason, guardId, reservationType, reservationNum, randomStatus, priority, lectureRoomId) values(${num}, null, null, '${startTime}',' ${lastTime}', ${leaderId}, null, null, null, null, '1', null, ${randomAfter}, null, ${lectureRoom})`
+    queryResult = await dbQuery(sql);
+  }
 
   for (var i = startTime; i <= lastTime; i++) {
     sql = `insert into reservationdescription (reservationId, date, time) values(${num}, '${date}', ${i})`
@@ -445,9 +457,33 @@ router.post('/create', async function(req, res, next) {
   day = calculateTime(date);
 
   for (var i = startTime; i <= lastTime; i++) {
-    sql = `insert into lectureroomdescription (lectureId, lectureRoomId, lectureTime, time, semester, roomStatus, date, day, reservationId) values(0, ${lectureRoom}, 0, ${i}, '2020-1', 'R', '${date}', '${day}', ${num})`
-    queryResult = await dbQuery(sql);
+    sql = `select roomStatus from lectureroomdescription where time='${i}' and date='${date}' and lectureRoomId = ${lectureRoom}`;
+    let query = await dbQuery(sql);
+    query = query.rows;
+
+    if(query.length!=0){
+      if(query[0].roomStatus!='R'){
+        var tmpStatus = parseInt(query[0].roomStatus);
+        tmpStatus = tmpStatus + 1;
+        sql = `update lectureroomdescription set roomStatus=${tmpStatus} where time=${i} and date='${date}' and lectureRoomId = ${lectureRoom}`
+        queryResult = await dbQuery(sql);
+      }
+    }
+
+    else{
+      if(dateParser-evaluateDate(new Date())<=3){
+        sql = `insert into lectureroomdescription (lectureId, lectureRoomId, lectureTime, time, semester, roomStatus, date, day, reservationId) values(0, ${lectureRoom}, 0, ${i}, '2020-1', 'R', '${date}', '${day}', ${num})`
+        queryResult = await dbQuery(sql);
+      }
+      else{
+        sql = `insert into lectureroomdescription (lectureId, lectureRoomId, lectureTime, time, semester, roomStatus, date, day, reservationId) values(0, ${lectureRoom}, 0, ${i}, '2020-1', '1', '${date}', '${day}', ${num})`
+        queryResult = await dbQuery(sql);
+      }
+    }
   }
+
+  sql = `insert into userreservationlist (reservationId, userId) values(${num}, ${leaderId})`
+  queryResult = await dbQuery(sql);
 
   res.json({
     'reservationId': num
@@ -484,6 +520,26 @@ router.post('/updateInfo', async function(req, res, next) {
   res.json({
     response: 'success'
   });
+});
+
+router.post('/searchStudentId', async function(req, res, next) {
+  var studentId = req.body.studentId;
+
+  let sql = `select id from user where studentNum='${studentId}'`
+  let queryResult = await dbQuery(sql);
+  queryResult = queryResult.rows;
+
+  if(queryResult.length!=0){
+    res.json({
+      response: 'success'
+    });
+  }
+
+  else{
+    res.json({
+      response: 'fail'
+    });
+  }
 });
 
 router.post('/beforeImage', async function(req, res, next) {

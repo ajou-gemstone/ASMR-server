@@ -22,6 +22,38 @@ const j = schedule.scheduleJob('00 * * * * *', function(){
 
 var app = express();
 
+app.io = require('socket.io')();
+
+app.io.sockets.on('connection', function(socket) {
+  console.log('user connected: ', socket.id);
+
+  var msg;
+  var roomname;
+  var tmp;
+
+  socket.on('join', function(text) {
+    socket.join(text.roomname);
+    app.io.sockets.in(text.roomname).emit('enter', text);
+  });
+
+  socket.on('message', function(text) {
+    msg = text;
+    console.log(text.roomname);
+    app.io.sockets.in(text.roomname).emit('receiveMsg', msg);
+  });
+
+  socket.on('leave', function(text) {
+    socket.leave(text.roomname);
+    console.log(text);
+    // app.io.sockets.in(text.roomname).emit('exit', text);
+    app.io.sockets.in(text.roomname).emit('exit', text);
+  })
+
+  socket.on('disconnect', function() {
+    console.log('user disconnected: ', socket.id);
+  })
+});
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
