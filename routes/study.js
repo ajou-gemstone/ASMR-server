@@ -32,8 +32,7 @@ router.get('/', async function(req, res, next) {
         leader: 1,
         studentNum: query[0].studentNum
       });
-    }
-    else{
+    } else {
       userList.push({
         userId: queryResult[i].userId,
         name: query[0].name,
@@ -74,7 +73,7 @@ router.get('/mylist', async function(req, res, next) {
 
   recodes = recodes.rows
 
-  for(var i=0;i<recodes.length;i++){
+  for (var i = 0; i < recodes.length; i++) {
     sql = `select id, title, studyGroupNumTotal, studyGroupNumCurrent from study where id=${recodes[i].studyId}`;
     querys = await dbQuery(sql);
 
@@ -87,11 +86,11 @@ router.get('/mylist', async function(req, res, next) {
       query.tagName = queryResult.rows;
     }
 
-    recodes[i].id=querys[0].id;
-    recodes[i].title=querys[0].title;
-    recodes[i].studyGroupNumTotal=querys[0].studyGroupNumTotal;
-    recodes[i].studyGroupNumCurrent=querys[0].studyGroupNumCurrent;
-    recodes[i].tagName=querys[0].tagName;
+    recodes[i].id = querys[0].id;
+    recodes[i].title = querys[0].title;
+    recodes[i].studyGroupNumTotal = querys[0].studyGroupNumTotal;
+    recodes[i].studyGroupNumCurrent = querys[0].studyGroupNumCurrent;
+    recodes[i].tagName = querys[0].tagName;
   }
 
   res.json(recodes);
@@ -114,6 +113,7 @@ router.post('/create', async function(req, res, next) {
   var studyGroupNumTot = req.body.studyGroupNumTot;
   var num;
   var tagArray = new Array();
+  var chatNum;
 
   if (typeof(tagName) == 'string') {
     tagArray.push(tagName);
@@ -127,15 +127,25 @@ router.post('/create', async function(req, res, next) {
   num = recodes[0].num;
   num += 1;
 
-  sql = `insert into study(id, name, category, title, textBody, classCode, studyGroupNumTotal, studyGroupNumCurrent, imageUri, leaderId) values(${num}, null, '${category}', '${title}', '${textBody}', 0, '${studyGroupNumTot}', 1, null, ${leaderId})`;
+  sql = `select max(id) as num from chatroom`;
+  recodes = await dbQuery(sql);
+  recodes = recodes.rows;
+
+  chatNum = recodes[0].num;
+  chatNum += 1;
+
+  sql = `insert into study(id, category, title, textBody, classCode, studyGroupNumTotal, studyGroupNumCurrent, imageUri, leaderId) values(${num}, '${category}', '${title}', '${textBody}', 0, '${studyGroupNumTot}', 1, null, ${leaderId})`;
   recodes = await dbQuery(sql);
 
-  for(var i=0;i<tagName.length;i++){
+  for (var i = 0; i < tagName.length; i++) {
     sql = `insert into studytag(studyId, tagName) values(${num}, '${tagName[i]}')`;
     recodes = await dbQuery(sql);
   }
 
   sql = `insert into userstudylist(studyId, userId) values(${num}, '${leaderId}')`;
+  recodes = await dbQuery(sql);
+
+  sql = `insert into chatroom(id, title) values(${chatNum}, '${title}')`;
   recodes = await dbQuery(sql);
 
   res.json({
@@ -176,7 +186,7 @@ router.post('/edit', async function(req, res, next) {
   sql = `delete from studytag where studyId=${groupId}`;
   recodes = await dbQuery(sql);
 
-  for(var i=0;i<tagName.length;i++){
+  for (var i = 0; i < tagName.length; i++) {
     sql = `insert into studytag(studyId, tagName) values(${groupId}, '${tagName[i]}')`;
     recodes = await dbQuery(sql);
   }

@@ -15,10 +15,10 @@ var userRouter = require('./routes/user');
 
 const schedule = require('node-schedule');
 
-const j = schedule.scheduleJob('00 * * * * *', function(){
-  console.log(new Date());
-  console.log('매 10초에 실행');
-});
+// const j = schedule.scheduleJob('00 * * * * *', function(){
+//   console.log(new Date());
+//   console.log('매 10초에 실행');
+// });
 
 var app = express();
 
@@ -38,7 +38,7 @@ app.io.sockets.on('connection', function(socket) {
 
   socket.on('message', function(text) {
     msg = text;
-    console.log(text.roomname);
+    console.log(text.room);
     app.io.sockets.in(text.roomname).emit('receiveMsg', msg);
   });
 

@@ -88,16 +88,17 @@ router.get('/list', async function(req, res, next) {
   }
 
   reservedRoomArray = Array.from(new Set(reservedRoomArray));
+
   for (var i = 0; i < lectureRoomArray.length; i++) {
     if (reservedRoomArray.indexOf(lectureRoomArray[i]) == -1) {
-      for (var j = startTime; j <= lastTime; j++) {
+      stateList = '';
+      for (var j = 0; j <= lastTime-startTime; j++) {
         stateList = stateList + 'A' + ' ';
       }
       resultList = {
         lectureroom: lectureRoomArray[i],
         stateList: stateList
       }
-      stateList = '';
       jsonResult.push(resultList);
     }
   }
@@ -257,6 +258,10 @@ router.get('/guardBuildingInfo', async function(req, res, next) {
     recode = recode.rows;
 
     for(var j=0;j<recode.length;j++){
+      sql = `select score from reservation where id=${recode[j].reservationId}`;
+      var query = await dbQuery(sql);
+      query = query.rows;
+
       sql = `select date, time from reservationdescription where reservationid=${recode[j].reservationId}`;
       var queryResult = await dbQuery(sql);
       queryResult = queryResult.rows;
@@ -269,6 +274,7 @@ router.get('/guardBuildingInfo', async function(req, res, next) {
         return a - b;
       });
 
+      recode[j].score = query[0].score
       recode[j].date = queryResult[0].date;
       recode[j].day = calculateTime(queryResult[0].date);
 

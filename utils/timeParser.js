@@ -1,4 +1,4 @@
-function timeParser(ss) {
+function timeParser() {
   const today = new Date();
   const hours = today.getHours();
   const minutes = today.getMinutes();
