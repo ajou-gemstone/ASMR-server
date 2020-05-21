@@ -33,21 +33,20 @@ app.io.sockets.on('connection', function(socket) {
 
   socket.on('join', function(text) {
     socket.join(text.roomname);
+    text.roomnum = parseInt(text.roomnum)+1;
     app.io.sockets.in(text.roomname).emit('enter', text);
   });
 
   socket.on('message', function(text) {
     msg = text;
-    console.log(text.room);
     app.io.sockets.in(text.roomname).emit('receiveMsg', msg);
   });
 
   socket.on('leave', function(text) {
     socket.leave(text.roomname);
-    console.log(text);
-    // app.io.sockets.in(text.roomname).emit('exit', text);
+    text.roomnum = parseInt(text.roomnum)-1;
     app.io.sockets.in(text.roomname).emit('exit', text);
-  })
+  });
 
   socket.on('disconnect', function() {
     console.log('user disconnected: ', socket.id);
@@ -60,7 +59,9 @@ app.set('view engine', 'ejs');
 
 app.use(logger('dev'));
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({
+  extended: false
+}));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 

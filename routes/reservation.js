@@ -477,7 +477,7 @@ router.post('/create', async function(req, res, next) {
     }
 
     else{
-      if(dateParser-evaluateDate(new Date())<=3){
+      if(dateParser-evaluateDate(new Date())<=2){
         sql = `insert into lectureroomdescription (lectureId, lectureRoomId, lectureTime, time, semester, roomStatus, date, day, reservationId) values(0, ${lectureRoom}, 0, ${i}, '2020-1', 'R', '${date}', '${day}', ${num})`
         queryResult = await dbQuery(sql);
       }

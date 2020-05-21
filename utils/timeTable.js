@@ -9,7 +9,6 @@ function timeTable(tableList, startTime, lastTime) {
   lastTime = parseInt(lastTime);
 
   timeTable = timeTable.splice(startTime, lastTime + 1);
-  
   var tableArray = new Array();
   var j = 0;
   var search;

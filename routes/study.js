@@ -16,7 +16,7 @@ router.get('/', async function(req, res, next) {
   let queryResult = await dbQuery(sql);
   recodes[0].tagName = queryResult.rows;
 
-  sql = `select userId from userstudylist where studyId = ${groupId}`;
+  sql = `select userId from userstudylist where studyId = ${groupId} and confirm=1`;
   queryResult = await dbQuery(sql);
   queryResult = queryResult.rows;
 
@@ -96,12 +96,23 @@ router.get('/mylist', async function(req, res, next) {
   res.json(recodes);
 });
 
-router.get('/myLecture', function(req, res, next) {
-  res.send('Success');
-});
+router.get('/waitinglist', async function(req, res, next) {
+  var groupId = req.query.groupId;
+  var result = new Array();
 
-router.get('/myStudy', function(req, res, next) {
-  res.send('Success');
+  let sql = `select userId from userstudylist where studyId=${groupId} and confirm=0`;
+  let recodes = await dbQuery(sql);
+  recodes = recodes.rows;
+
+  for(var i=0;i<recodes.length;i++){
+    sql = `select id, name, studentNum from user where id=${recodes[i].userId}`;
+    let recode = await dbQuery(sql);
+    recode = recode.rows;
+
+    result.push(recode[0]);
+  }
+
+  res.json(result);
 });
 
 router.post('/create', async function(req, res, next) {
@@ -142,7 +153,7 @@ router.post('/create', async function(req, res, next) {
     recodes = await dbQuery(sql);
   }
 
-  sql = `insert into userstudylist(studyId, userId) values(${num}, '${leaderId}')`;
+  sql = `insert into userstudylist(studyId, userId, confirm) values(${num}, '${leaderId}', 0)`;
   recodes = await dbQuery(sql);
 
   sql = `insert into chatroom(id, title) values(${chatNum}, '${title}')`;
@@ -157,7 +168,7 @@ router.post('/register', async function(req, res, next) {
   var groupId = req.body.groupId;
   var userId = req.body.userId;
 
-  let sql = `insert into userstudylist(studyId, userId) values(${groupId}, ${userId})`;
+  let sql = `insert into userstudylist(studyId, userId, confirm) values(${groupId}, ${userId}, 0)`;
   let recodes = await dbQuery(sql);
 
   sql = `update study set studyGroupNumCurrent = studyGroupNumCurrent+1 where id=${groupId}`;
@@ -174,13 +185,14 @@ router.post('/edit', async function(req, res, next) {
   var textBody = req.body.textBody;
   var tagName = req.body.tagName;
   var studyGroupNumTot = req.body.studyGroupNumTot;
+  var tagArray = new Array();
 
   if (typeof(tagName) == 'string') {
     tagArray.push(tagName);
     tagName = tagArray;
   }
 
-  let sql = `update study set title='${title}', textBody='${textBody}', studyGroupNumTot='${studyGroupNumTot}' where id=${groupId}`;
+  let sql = `update study set title='${title}', textBody='${textBody}', studyGroupNumTotal='${studyGroupNumTot}' where id=${groupId}`;
   let recodes = await dbQuery(sql);
 
   sql = `delete from studytag where studyId=${groupId}`;
@@ -190,6 +202,30 @@ router.post('/edit', async function(req, res, next) {
     sql = `insert into studytag(studyId, tagName) values(${groupId}, '${tagName[i]}')`;
     recodes = await dbQuery(sql);
   }
+
+  res.json({
+    response: 'success'
+  });
+});
+
+router.post('/accept', async function(req, res, next) {
+  var groupId = req.body.groupId;
+  var userId = req.body.userId;
+
+  let sql = `update userstudylist set confirm=1 where studyId=${groupId} and userId=${userId}`;
+  let recodes = await dbQuery(sql);
+
+  res.json({
+    response: 'success'
+  });
+});
+
+router.post('/reject', async function(req, res, next) {
+  var groupId = req.body.groupId;
+  var userId = req.body.userId;
+
+  let sql = `delete from userstudylist where studyId=${groupId} and userId=${userId}`;
+  let recodes = await dbQuery(sql);
 
   res.json({
     response: 'success'
