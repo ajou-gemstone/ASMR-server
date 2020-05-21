@@ -33,14 +33,22 @@ router.post('/login', async function(req, res, next) {
   let recodes = await dbQuery(sql);
   recodes = recodes.rows;
 
-  let hashPassword = crypto.createHash("sha512").update(password+recodes[0].salt).digest("hex");
+  if (recodes.length == 0) {
+    res.json({
+      id: -1
+    });
+  } else {
+    let hashPassword = crypto.createHash("sha512").update(password + recodes[0].salt).digest("hex");
 
-  if (hashPassword == recodes[0].userPassword) {
-    res.json({id: recodes[0].id});
-  }
-
-  else{
-    res.json({id: -1});
+    if (hashPassword == recodes[0].userPassword) {
+      res.json({
+        id: recodes[0].id
+      });
+    } else {
+      res.json({
+        id: -1
+      });
+    }
   }
 });
 
@@ -51,13 +59,11 @@ router.post('/confirm', async function(req, res, next) {
   let recodes = await dbQuery(sql);
   recodes = recodes.rows;
 
-  if(recodes.length==0){
+  if (recodes.length == 0) {
     res.json({
       response: 'success'
     });
-  }
-
-  else{
+  } else {
     res.json({
       response: 'fail'
     });
@@ -75,7 +81,7 @@ router.post('/signup', async function(req, res, next) {
   var lectureList = new Array();
   var lectureArray = new Array();
 
-  if(typeof(lecture)=='string'){
+  if (typeof(lecture) == 'string') {
     lectureArray.push(lecture);
     lecture = lectureArray;
   }
@@ -103,6 +109,19 @@ router.post('/signup', async function(req, res, next) {
   for (var i = 0; i < lectureList.length; i++) {
     sql = `insert into userlecturelist(lectureId, studentId) values(${lectureList[i]}, ${num})`
     recodes = await dbQuery(sql);
+  }
+
+  for (var i = 0; i < lectureList.length; i++) {
+    sql = `select lectureroom.lectureRoomId as lectureRoomId, lectureroomdescription.time as time, lectureroomdescription.day as day from lectureroom, lectureroomdescription where lectureroomdescription.lectureId='${lectureList[i]}' and lectureroomdescription.lectureRoomId=lectureroom.id`;
+    let query = await dbQuery(sql);
+    query = query.rows;
+
+    for (var j = 0; j < query.length; j++) {
+      var contents = lecture[i] + "," + query[j].lectureRoomId;
+      var time = query[j].day+query[j].time;
+      sql = `insert into timetable(contents, time, userId) values('${contents}', '${time}', ${num})`;
+      let queryResult = await dbQuery(sql);
+    }
   }
 
   res.json({
