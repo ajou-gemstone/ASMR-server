@@ -119,7 +119,7 @@ router.post('/signup', async function(req, res, next) {
     for (var j = 0; j < query.length; j++) {
       var contents = lecture[i] + "," + query[j].lectureRoomId;
       var time = query[j].day+query[j].time;
-      sql = `insert into timetable(contents, time, userId) values('${contents}', '${time}', ${num})`;
+      sql = `insert into timetable(contents, time, userId, type) values('${contents}', '${time}', ${num}, 1)`;
       let queryResult = await dbQuery(sql);
     }
   }

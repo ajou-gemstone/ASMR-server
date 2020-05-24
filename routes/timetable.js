@@ -23,9 +23,12 @@ router.post('/update', async function(req, res, next) {
     info = infoArray;
   }
 
+  let sql = `delete from timetable where userId=${userId} and type=2`;
+  let recodes = await dbQuery(sql);
+
   for (var i = 0; i < info.length; i++) {
-    let sql = `insert into timetable(contents, time, userId) values('${info[i].contents}', '${info[i].time}', ${userId})`;
-    let recodes = await dbQuery(sql);
+    sql = `insert into timetable(contents, time, userId, type) values('${info[i].contents}', '${info[i].time}', ${userId}, 2)`;
+    recodes = await dbQuery(sql);
   }
 
   res.json({
