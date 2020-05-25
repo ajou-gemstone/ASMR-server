@@ -13,6 +13,7 @@ var reservationRouter = require('./routes/reservation');
 var cafeRouter = require('./routes/cafe');
 var userRouter = require('./routes/user');
 var timetableRouter = require('./routes/timetable')
+
 const schedule = require('node-schedule');
 
 // const j = schedule.scheduleJob('00 * * * * *', function(){
@@ -33,7 +34,7 @@ app.io.sockets.on('connection', function(socket) {
 
   socket.on('join', function(text) {
     socket.join(text.roomname);
-    text.roomnum = parseInt(text.roomnum) + 1;
+    text.roomnum = parseInt(text.roomnum)+1;
     app.io.sockets.in(text.roomname).emit('enter', text);
   });
 
@@ -44,7 +45,7 @@ app.io.sockets.on('connection', function(socket) {
 
   socket.on('leave', function(text) {
     socket.leave(text.roomname);
-    text.roomnum = parseInt(text.roomnum) - 1;
+    text.roomnum = parseInt(text.roomnum)-1;
     app.io.sockets.in(text.roomname).emit('exit', text);
   });
 

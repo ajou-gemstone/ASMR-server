@@ -327,10 +327,6 @@ router.get('/buildingInfo', async function(req, res, next) {
   var month = date.getMonth()+1;
   var day = date.getDate();
 
-  if((month+"").length<2){
-    month = "0" + month;
-  }
-
   if((day+"").length<2){
     day = "0" + day;
   }
@@ -351,16 +347,14 @@ router.get('/buildingInfo', async function(req, res, next) {
     id = recodes[l].id;
     lectureRoomId = recodes[l].lectureRoomId;
 
-    sql = `select reservation.id from reservation, reservationdescription where reservation.lectureRoomId=${id} and reservation.id=reservationdescription.reservationId and reservationdescription.date='${date}'`;
+    sql = `select reservation.id from reservation, reservationdescription where reservation.lectureRoomId=${id} and reservationdescription.date='${date}'`;
     recode = await dbQuery(sql);
     recode = recode.rows;
 
     for (var i = 0; i < recode.length; i++) {
       reservationList.push(recode[i].id);
     }
-
-    reservationList = Array.from(new Set(reservationList));
-
+    
     for (var i = 0; i < reservationList.length; i++) {
       sql = `select reservationType from reservation where id=${reservationList[i]}`;
       queryList = await dbQuery(sql);
