@@ -88,17 +88,16 @@ router.get('/list', async function(req, res, next) {
   }
 
   reservedRoomArray = Array.from(new Set(reservedRoomArray));
-
   for (var i = 0; i < lectureRoomArray.length; i++) {
     if (reservedRoomArray.indexOf(lectureRoomArray[i]) == -1) {
-      stateList = '';
-      for (var j = 0; j <= lastTime-startTime; j++) {
+      for (var j = startTime; j <= lastTime; j++) {
         stateList = stateList + 'A' + ' ';
       }
       resultList = {
         lectureroom: lectureRoomArray[i],
         stateList: stateList
       }
+      stateList = '';
       jsonResult.push(resultList);
     }
   }
@@ -168,7 +167,6 @@ router.get('/myInfo', async function(req, res, next) {
   var timeList = new Array();
   var resultArray = new Array();
   var resultList = new Array();
-  var result = new Array();
 
   let sql = `select reservationId from userreservationlist where userId=${userId}`;
   var recodes = await dbQuery(sql);
@@ -179,7 +177,7 @@ router.get('/myInfo', async function(req, res, next) {
   }
 
   for (var i = 0; i < reservationList.length; i++) {
-    sql = `SELECT reservation.id as reservationId, leaderId, (SELECT lectureroom.lectureRoomId FROM lectureroom where lectureroom.id=reservation.lectureRoomId) AS lectureRoom from reservation where reservation.id=${reservationList[i]}`;
+    sql = `SELECT reservation.id as reservationId, (SELECT lectureroom.lectureRoomId FROM lectureroom where lectureroom.id=reservation.lectureRoomId) AS lectureRoom from reservation where reservation.id=${reservationList[i]}`;
     var recode = await dbQuery(sql);
     recode = recode.rows;
 
@@ -205,30 +203,24 @@ router.get('/myInfo', async function(req, res, next) {
     timeList = [];
   }
 
-  for(var i=0;i<resultArray.length;i++){
-    if(resultArray[i].leaderId==userId){
-      result.push(resultArray[i])
-    }
-  }
-
   if (tense == 'future') {
-    for (var i = 0; i < result.length; i++) {
-      if (evaluateDate(result[i].date) > evaluateDate(new Date())) {
-        resultList.push(result[i])
+    for (var i = 0; i < resultArray.length; i++) {
+      if (evaluateDate(resultArray[i].date) > evaluateDate(new Date())) {
+        resultList.push(resultArray[i])
       }
     }
   }
   else if(tense=='today'){
-    for (var i = 0; i < result.length; i++) {
-      if (evaluateDate(result[i].date) == evaluateDate(new Date())) {
-        resultList.push(result[i])
+    for (var i = 0; i < resultArray.length; i++) {
+      if (evaluateDate(resultArray[i].date) == evaluateDate(new Date())) {
+        resultList.push(resultArray[i])
       }
     }
   }
   else {
-    for (var i = 0; i < result.length; i++) {
-      if (evaluateDate(result[i].date) < evaluateDate(new Date())) {
-        resultList.push(result[i])
+    for (var i = 0; i < resultArray.length; i++) {
+      if (evaluateDate(resultArray[i].date) < evaluateDate(new Date())) {
+        resultList.push(resultArray[i])
       }
     }
   }
@@ -253,15 +245,11 @@ router.get('/guardBuildingInfo', async function(req, res, next) {
   }
 
   for (var i = 0; i < buildingList.length; i++) {
-    sql = `SELECT reservation.id as reservationId, lectureroom.lectureRoomId as lectureRoom from reservation, lectureroom where lectureroom.id=${buildingList[i]} and reservation.lectureRoomId=lectureroom.id`;
+    sql = `SELECT reservation.id as reservationId, lectureroom.lectureRoomId from reservation, lectureroom where lectureroom.id=${buildingList[i]} and reservation.lectureRoomId=lectureroom.id`;
     var recode = await dbQuery(sql);
     recode = recode.rows;
 
     for(var j=0;j<recode.length;j++){
-      sql = `select score from reservation where id=${recode[j].reservationId}`;
-      var query = await dbQuery(sql);
-      query = query.rows;
-
       sql = `select date, time from reservationdescription where reservationid=${recode[j].reservationId}`;
       var queryResult = await dbQuery(sql);
       queryResult = queryResult.rows;
@@ -274,7 +262,6 @@ router.get('/guardBuildingInfo', async function(req, res, next) {
         return a - b;
       });
 
-      recode[j].score = query[0].score
       recode[j].date = queryResult[0].date;
       recode[j].day = calculateTime(queryResult[0].date);
 
@@ -322,20 +309,6 @@ router.get('/buildingInfo', async function(req, res, next) {
   var userList = new Array();
   var count = 0;
   var resultarray = new Array();
-  var date = new Date();
-  var year = date.getFullYear();
-  var month = date.getMonth()+1;
-  var day = date.getDate();
-
-  if((day+"").length<2){
-    day = "0" + day;
-  }
-
-  year = year.toString();
-  month = month.toString();
-  day = day.toString();
-
-  date = year+"-"+month+"-"+day;
 
   var time = timeParser();
 
@@ -347,14 +320,14 @@ router.get('/buildingInfo', async function(req, res, next) {
     id = recodes[l].id;
     lectureRoomId = recodes[l].lectureRoomId;
 
-    sql = `select reservation.id from reservation, reservationdescription where reservation.lectureRoomId=${id} and reservationdescription.date='${date}'`;
+    sql = `select id from reservation where lectureRoomId=${id}`;
     recode = await dbQuery(sql);
     recode = recode.rows;
 
     for (var i = 0; i < recode.length; i++) {
       reservationList.push(recode[i].id);
     }
-    
+
     for (var i = 0; i < reservationList.length; i++) {
       sql = `select reservationType from reservation where id=${reservationList[i]}`;
       queryList = await dbQuery(sql);
@@ -433,8 +406,6 @@ router.post('/create', async function(req, res, next) {
   var leaderId = req.body.userId;
   var randomAfter = req.body.randomAfter;
   var day;
-  var dateParser;
-  var tmp;
 
   leaderId = parseInt(leaderId);
 
@@ -456,18 +427,8 @@ router.post('/create', async function(req, res, next) {
   var queryResult = queryResult.rows;
   lectureRoom = queryResult[0]["id"];
 
-  tmp = date.split('-');
-  dateParser = tmp[0]+tmp[1]+tmp[2];
-
-  if(dateParser-evaluateDate(new Date())<=3){
-    sql = `insert into reservation (id, beforeUri, afterUri, beforeTime, afterTime, leaderId, perpose, score, scoreReason, guardId, reservationType, reservationNum, randomStatus, priority, lectureRoomId) values(${num}, null, null, '${startTime}',' ${lastTime}', ${leaderId}, null, null, null, null, 'R', null, ${randomAfter}, null, ${lectureRoom})`
-    queryResult = await dbQuery(sql);
-  }
-
-  else{
-    sql = `insert into reservation (id, beforeUri, afterUri, beforeTime, afterTime, leaderId, perpose, score, scoreReason, guardId, reservationType, reservationNum, randomStatus, priority, lectureRoomId) values(${num}, null, null, '${startTime}',' ${lastTime}', ${leaderId}, null, null, null, null, '1', null, ${randomAfter}, null, ${lectureRoom})`
-    queryResult = await dbQuery(sql);
-  }
+  sql = `insert into reservation (id, beforeUri, afterUri, beforeTime, afterTime, leaderId, perpose, score, scoreReason, guardId, reservationType, reservationNum, randomStatus, priority, lectureRoomId) values(${num}, null, null, '${startTime}',' ${lastTime}', ${leaderId}, null, null, null, null, 'R', null, ${randomAfter}, null, ${lectureRoom})`
+  queryResult = await dbQuery(sql);
 
   for (var i = startTime; i <= lastTime; i++) {
     sql = `insert into reservationdescription (reservationId, date, time) values(${num}, '${date}', ${i})`
@@ -477,33 +438,9 @@ router.post('/create', async function(req, res, next) {
   day = calculateTime(date);
 
   for (var i = startTime; i <= lastTime; i++) {
-    sql = `select roomStatus from lectureroomdescription where time='${i}' and date='${date}' and lectureRoomId = ${lectureRoom}`;
-    let query = await dbQuery(sql);
-    query = query.rows;
-
-    if(query.length!=0){
-      if(query[0].roomStatus!='R'){
-        var tmpStatus = parseInt(query[0].roomStatus);
-        tmpStatus = tmpStatus + 1;
-        sql = `update lectureroomdescription set roomStatus=${tmpStatus} where time=${i} and date='${date}' and lectureRoomId = ${lectureRoom}`
-        queryResult = await dbQuery(sql);
-      }
-    }
-
-    else{
-      if(dateParser-evaluateDate(new Date())<=2){
-        sql = `insert into lectureroomdescription (lectureId, lectureRoomId, lectureTime, time, semester, roomStatus, date, day, reservationId) values(0, ${lectureRoom}, 0, ${i}, '2020-1', 'R', '${date}', '${day}', ${num})`
-        queryResult = await dbQuery(sql);
-      }
-      else{
-        sql = `insert into lectureroomdescription (lectureId, lectureRoomId, lectureTime, time, semester, roomStatus, date, day, reservationId) values(0, ${lectureRoom}, 0, ${i}, '2020-1', '1', '${date}', '${day}', ${num})`
-        queryResult = await dbQuery(sql);
-      }
-    }
+    sql = `insert into lectureroomdescription (lectureId, lectureRoomId, lectureTime, time, semester, roomStatus, date, day) values(0, ${lectureRoom}, 0, ${i}, '2020-1', 'R', '${date}', '${day}')`
+    queryResult = await dbQuery(sql);
   }
-
-  sql = `insert into userreservationlist (reservationId, userId) values(${num}, ${leaderId})`
-  queryResult = await dbQuery(sql);
 
   res.json({
     'reservationId': num
@@ -525,11 +462,12 @@ router.post('/updateInfo', async function(req, res, next) {
 
   let sql = `update reservation set perpose = '${reservationIntent}', reservationNum = '${userClassofsNum}' where id=${reservationId}`;
   var queryResult = await dbQuery(sql);
+
   for (var i = 0; i < userClassofs.length; i++) {
-    sql = `select id from user where studentNum='${userClassofs[i]}'`
+    sql = `select id from user where studentNum='${userClassofs}'`
     queryResult = await dbQuery(sql);
     queryResult = queryResult.rows;
-    studentId.push(queryResult[0]['id']);
+    studentId.push(queryResult[i]['id']);
   }
 
   for (var i = 0; i < userClassofs.length; i++) {
@@ -540,26 +478,6 @@ router.post('/updateInfo', async function(req, res, next) {
   res.json({
     response: 'success'
   });
-});
-
-router.post('/searchStudentId', async function(req, res, next) {
-  var studentId = req.body.studentId;
-
-  let sql = `select id from user where studentNum='${studentId}'`
-  let queryResult = await dbQuery(sql);
-  queryResult = queryResult.rows;
-
-  if(queryResult.length!=0){
-    res.json({
-      response: 'success'
-    });
-  }
-
-  else{
-    res.json({
-      response: 'fail'
-    });
-  }
 });
 
 router.post('/beforeImage', async function(req, res, next) {
@@ -598,9 +516,6 @@ router.post('/delete', async function(req, res, next) {
   queryResult = await dbQuery(sql);
 
   sql = `delete from reservation where id=${reservationId}`;
-  queryResult = await dbQuery(sql);
-
-  sql = `delete from lectureroomdescription where reservationId=${reservationId}`;
   queryResult = await dbQuery(sql);
 
   res.json({

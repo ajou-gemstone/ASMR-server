@@ -2,6 +2,8 @@ var express = require('express');
 var router = express.Router();
 var dbQuery = require("../database/promiseQuery.js");
 var crypto = require('crypto');
+var nodemailer = require('nodemailer');
+var smtpTransport = require('nodemailer-smtp-transport');
 
 /* GET home page. */
 router.get('/', async function(req, res, next) {
@@ -28,6 +30,7 @@ router.get('/', async function(req, res, next) {
 router.post('/login', async function(req, res, next) {
   var userId = req.body.userId;
   var password = req.body.password;
+  var token = req.body.token;
 
   let sql = `select id, salt, userPassword from user where userId='${userId}'`;
   let recodes = await dbQuery(sql);
@@ -41,6 +44,9 @@ router.post('/login', async function(req, res, next) {
     let hashPassword = crypto.createHash("sha512").update(password + recodes[0].salt).digest("hex");
 
     if (hashPassword == recodes[0].userPassword) {
+      sql = `update user set token='${token}' where id=${recodes[0].id}`;
+      let recode = await dbQuery(sql);
+
       res.json({
         id: recodes[0].id
       });
@@ -70,6 +76,55 @@ router.post('/confirm', async function(req, res, next) {
   }
 });
 
+router.post('/email', async function(req, res, next) {
+  var email = req.body.email;
+  var result;
+
+  let sql = `select email from user where email='${email}'`;
+  let recodes = await dbQuery(sql);
+  recodes = recodes.rows;
+
+  if (recodes.length == 0) {
+    result = Math.floor(Math.random() * 1000000) + 100000;
+    if (result > 1000000) {
+      result = result - 100000;
+    }
+
+    var transporter = nodemailer.createTransport(smtpTransport({
+      service: 'gmail',
+      host: 'smtp.gmail.com',
+      auth: {
+        user: 'hjw9504@ajou.ac.kr',
+        pass: 'hjw201520987'
+      }
+    }));
+
+    var mailOptions = {
+      from: 'hjw9504@ajou.ac.kr',
+      to: email,
+      subject: 'Sending Email using Node.js[nodemailer]',
+      text: `다음 내용을 입력해주세요! ${result}`
+    };
+
+    transporter.sendMail(mailOptions, function(error, info) {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log('Email sent: ' + info.response);
+      }
+    });
+
+    res.json({
+      response: result
+    });
+  } else {
+    res.json({
+      response: '-1'
+    });
+  }
+
+});
+
 router.post('/signup', async function(req, res, next) {
   var userId = req.body.userId;
   var password = req.body.password;
@@ -96,7 +151,7 @@ router.post('/signup', async function(req, res, next) {
   let salt = Math.round((new Date().valueOf() * Math.random())) + "";
   let hashPassword = crypto.createHash("sha512").update(password + salt).digest("hex");
 
-  sql = `insert into user(id, name, userId, userPassword, email, userType, photo, phoneNumber, score, studentNum, salt) values(${num}, '${name}', '${userId}', '${hashPassword}', '${email}', 0, null, null, null, '${studentNumber}', '${salt}')`
+  sql = `insert into user(id, name, userId, userPassword, email, userType, photo, phoneNumber, score, studentNum, salt, token) values(${num}, '${name}', '${userId}', '${hashPassword}', '${email}', 0, null, null, null, '${studentNumber}', '${salt}', null)`
   recodes = await dbQuery(sql);
 
   for (var i = 0; i < lecture.length; i++) {
@@ -118,7 +173,7 @@ router.post('/signup', async function(req, res, next) {
 
     for (var j = 0; j < query.length; j++) {
       var contents = lecture[i] + "," + query[j].lectureRoomId;
-      var time = query[j].day+query[j].time;
+      var time = query[j].day + query[j].time;
       sql = `insert into timetable(contents, time, userId, type) values('${contents}', '${time}', ${num}, 1)`;
       let queryResult = await dbQuery(sql);
     }
