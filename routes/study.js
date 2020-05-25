@@ -1,6 +1,8 @@
 var express = require('express');
 var router = express.Router();
 var dbQuery = require("../database/promiseQuery.js");
+var admin = require("firebase-admin");
+var serviceAccount = require("../asmr-799cf-firebase-adminsdk-57wam-7a9f28cc26.json");
 
 /* GET home page. */
 router.get('/', async function(req, res, next) {
@@ -104,7 +106,7 @@ router.get('/waitinglist', async function(req, res, next) {
   let recodes = await dbQuery(sql);
   recodes = recodes.rows;
 
-  for(var i=0;i<recodes.length;i++){
+  for (var i = 0; i < recodes.length; i++) {
     sql = `select id, name, studentNum from user where id=${recodes[i].userId}`;
     let recode = await dbQuery(sql);
     recode = recode.rows;
@@ -171,6 +173,44 @@ router.post('/register', async function(req, res, next) {
   let sql = `insert into userstudylist(studyId, userId, confirm) values(${groupId}, ${userId}, 0)`;
   let recodes = await dbQuery(sql);
 
+  sql = `select user.token from user, study where study.id=${groupId} and user.id=study.leaderId`;
+  recodes = await dbQuery(sql);
+  recodes = recodes.rows;
+
+  if (!admin.apps.length) {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      //  databaseURL: "https://asmr-799cf.firebaseio.com"
+    });
+  }
+
+  var fcm_target_token = recodes[0].token;
+
+  //-----------
+  //메세지 작성 부분
+  var fcm_message = {
+
+    notification: {
+      title: '여소해주세요', //여기에 알림 목적을 작성
+      body: '확인 메세지'
+    },
+    data: {
+      fileno: '1',
+      style: 'good'
+    },
+    token: fcm_target_token
+  }
+
+  admin.messaging().send(fcm_message)
+    .then(function(response) {
+      console.log("보내기 성공 메세지" + response);
+    }).catch(function(error) {
+      console.log('보내기 실패 메세지' + error);
+      if (!/already exists/.test(error.message)) {
+        console.error('Firebase initialization error raised', error.stack)
+      }
+    });
+
   res.json({
     response: 'success'
   });
@@ -215,6 +255,44 @@ router.post('/accept', async function(req, res, next) {
   sql = `update study set studyGroupNumCurrent = studyGroupNumCurrent+1 where id=${groupId}`;
   recodes = await dbQuery(sql);
 
+  sql = `select user.token from user where user.id=${userId}`;
+  recodes = await dbQuery(sql);
+  recodes = recodes.rows;
+
+  if (!admin.apps.length) {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      //  databaseURL: "https://asmr-799cf.firebaseio.com"
+    });
+  }
+
+  var fcm_target_token = recodes[0].token;
+
+  //-----------
+  //메세지 작성 부분
+  var fcm_message = {
+
+    notification: {
+      title: '여소해주세요', //여기에 알림 목적을 작성
+      body: '수락되었습니다.'
+    },
+    data: {
+      fileno: '1',
+      style: 'good'
+    },
+    token: fcm_target_token
+  }
+
+  admin.messaging().send(fcm_message)
+    .then(function(response) {
+      console.log("보내기 성공 메세지" + response);
+    }).catch(function(error) {
+      console.log('보내기 실패 메세지' + error);
+      if (!/already exists/.test(error.message)) {
+        console.error('Firebase initialization error raised', error.stack)
+      }
+    });
+
   res.json({
     response: 'success'
   });
@@ -227,9 +305,89 @@ router.post('/reject', async function(req, res, next) {
   let sql = `delete from userstudylist where studyId=${groupId} and userId=${userId}`;
   let recodes = await dbQuery(sql);
 
+  sql = `select user.token from user where user.id=${userId}`;
+  recodes = await dbQuery(sql);
+  recodes = recodes.rows;
+
+  if (!admin.apps.length) {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      //  databaseURL: "https://asmr-799cf.firebaseio.com"
+    });
+  }
+
+  var fcm_target_token = recodes[0].token;
+
+  //-----------
+  //메세지 작성 부분
+  var fcm_message = {
+
+    notification: {
+      title: '여소해주세요', //여기에 알림 목적을 작성
+      body: '다음 기회에'
+    },
+    data: {
+      fileno: '1',
+      style: 'good'
+    },
+    token: fcm_target_token
+  }
+
+  admin.messaging().send(fcm_message)
+    .then(function(response) {
+      console.log("보내기 성공 메세지" + response);
+    }).catch(function(error) {
+      console.log('보내기 실패 메세지' + error);
+      if (!/already exists/.test(error.message)) {
+        console.error('Firebase initialization error raised', error.stack)
+      }
+    });
+
   res.json({
     response: 'success'
   });
+});
+
+router.post('/position', async function(req, res, next) {
+  var token = req.body.token;
+
+  if (!admin.apps.length) {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      //  databaseURL: "https://asmr-799cf.firebaseio.com"
+    });
+  }
+
+  /** 안드로이드 단말에서 추출한 token값 */
+  // 안드로이드 App이 적절한 구현절차를 통해서 생성해야 하는 값이다.
+  // 안드로이드 단말에서 Node server로 POST방식 전송 후,
+  // Node서버는 이 값을 DB에 보관하고 있으면 된다.
+  var fcm_target_token = token;
+
+  //-----------
+  //메세지 작성 부분
+  var fcm_message = {
+
+    notification: {
+      title: '시범 데이터 발송', //여기에 알림 목적을 작성
+      body: '확인 메세지'
+    },
+    data: {
+      fileno: '1',
+      style: 'good'
+    },
+    token: fcm_target_token
+  }
+
+  admin.messaging().send(fcm_message)
+    .then(function(response) {
+      console.log("보내기 성공 메세지" + response);
+    }).catch(function(error) {
+      console.log('보내기 실패 메세지' + error);
+      if (!/already exists/.test(error.message)) {
+        console.error('Firebase initialization error raised', error.stack)
+      }
+    });
 });
 
 router.post('/:studyId/delete', function(req, res, next) {
