@@ -209,15 +209,13 @@ router.get('/myInfo', async function(req, res, next) {
         resultList.push(resultArray[i])
       }
     }
-  }
-  else if(tense=='today'){
+  } else if (tense == 'today') {
     for (var i = 0; i < resultArray.length; i++) {
       if (evaluateDate(resultArray[i].date) == evaluateDate(new Date())) {
         resultList.push(resultArray[i])
       }
     }
-  }
-  else {
+  } else {
     for (var i = 0; i < resultArray.length; i++) {
       if (evaluateDate(resultArray[i].date) < evaluateDate(new Date())) {
         resultList.push(resultArray[i])
@@ -249,7 +247,7 @@ router.get('/guardBuildingInfo', async function(req, res, next) {
     var recode = await dbQuery(sql);
     recode = recode.rows;
 
-    for(var j=0;j<recode.length;j++){
+    for (var j = 0; j < recode.length; j++) {
       sql = `select date, time from reservationdescription where reservationid=${recode[j].reservationId}`;
       var queryResult = await dbQuery(sql);
       queryResult = queryResult.rows;
@@ -279,15 +277,13 @@ router.get('/guardBuildingInfo', async function(req, res, next) {
         resultList.push(resultArray[i])
       }
     }
-  }
-  else if(tense=='today'){
+  } else if (tense == 'today') {
     for (var i = 0; i < resultArray.length; i++) {
       if (evaluateDate(resultArray[i].date) == evaluateDate(new Date())) {
         resultList.push(resultArray[i])
       }
     }
-  }
-  else {
+  } else {
     for (var i = 0; i < resultArray.length; i++) {
       if (evaluateDate(resultArray[i].date) < evaluateDate(new Date())) {
         resultList.push(resultArray[i])
@@ -316,7 +312,7 @@ router.get('/buildingInfo', async function(req, res, next) {
   recodes = await dbQuery(sql);
   recodes = recodes.rows;
 
-  for(var l=0;l<recodes.length;l++){
+  for (var l = 0; l < recodes.length; l++) {
     id = recodes[l].id;
     lectureRoomId = recodes[l].lectureRoomId;
 
@@ -368,17 +364,17 @@ router.get('/buildingInfo', async function(req, res, next) {
     }
   }
 
-  for(var i=0;i<resultArray.length;i++){
-    for(var j=resultArray[i].startTime;j<=resultArray[i].lastTime;j++){
-      if(j==time){
+  for (var i = 0; i < resultArray.length; i++) {
+    for (var j = resultArray[i].startTime; j <= resultArray[i].lastTime; j++) {
+      if (j == time) {
         count++;
         break;
       }
     }
-    if(count!=0){
+    if (count != 0) {
       resultarray.push(resultArray[i]);
     }
-    count=0;
+    count = 0;
   }
 
   res.json(resultarray);
@@ -427,7 +423,7 @@ router.post('/create', async function(req, res, next) {
   var queryResult = queryResult.rows;
   lectureRoom = queryResult[0]["id"];
 
-  sql = `insert into reservation (id, beforeUri, afterUri, beforeTime, afterTime, leaderId, perpose, score, scoreReason, guardId, reservationType, reservationNum, randomStatus, priority, lectureRoomId) values(${num}, null, null, '${startTime}',' ${lastTime}', ${leaderId}, null, null, null, null, 'R', null, ${randomAfter}, null, ${lectureRoom})`
+  sql = `insert into reservation (id, beforeUri, afterUri, beforeTime, afterTime, leaderId, perpose, score, scoreReason, guardId, reservationType, reservationNum, randomStatus, priority, lectureRoomId) values(${num}, null, null, '${startTime}',' ${lastTime}', ${leaderId}, null, null, null, null, 'R', 1, ${randomAfter}, null, ${lectureRoom})`
   queryResult = await dbQuery(sql);
 
   for (var i = startTime; i <= lastTime; i++) {
@@ -438,7 +434,7 @@ router.post('/create', async function(req, res, next) {
   day = calculateTime(date);
 
   for (var i = startTime; i <= lastTime; i++) {
-    sql = `insert into lectureroomdescription (lectureId, lectureRoomId, lectureTime, time, semester, roomStatus, date, day) values(0, ${lectureRoom}, 0, ${i}, '2020-1', 'R', '${date}', '${day}')`
+    sql = `insert into lectureroomdescription (lectureId, lectureRoomId, lectureTime, time, semester, roomStatus, date, day, reservationId) values(0, ${lectureRoom}, 0, ${i}, '2020-1', 'R', '${date}', '${day}', ${num})`
     queryResult = await dbQuery(sql);
   }
 
@@ -539,6 +535,25 @@ router.post('/saveScore', async function(req, res, next) {
   res.json({
     response: 'success'
   });
+});
+
+router.post('/searchStudentId', async function(req, res, next) {
+  var studentId = req.body.studentId;
+
+  let sql = `select id from user where studentNum=${studentId}`;
+  var queryResult = await dbQuery(sql);
+  queryResult = queryResult.rows;
+
+  if (queryResult.length != 0) {
+    res.json({
+      response: 'success'
+    });
+  } else {
+    res.json({
+      response: 'fail'
+    });
+  }
+
 });
 
 module.exports = router;
