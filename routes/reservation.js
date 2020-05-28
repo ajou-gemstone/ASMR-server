@@ -176,6 +176,8 @@ router.get('/myInfo', async function(req, res, next) {
     reservationList.push(recodes[i].reservationId)
   }
 
+  reservationList = Array.from(new Set(reservationList));
+
   for (var i = 0; i < reservationList.length; i++) {
     sql = `SELECT reservation.id as reservationId, (SELECT lectureroom.lectureRoomId FROM lectureroom where lectureroom.id=reservation.lectureRoomId) AS lectureRoom from reservation where reservation.id=${reservationList[i]}`;
     var recode = await dbQuery(sql);
@@ -243,7 +245,7 @@ router.get('/guardBuildingInfo', async function(req, res, next) {
   }
 
   for (var i = 0; i < buildingList.length; i++) {
-    sql = `SELECT reservation.id as reservationId, lectureroom.lectureRoomId from reservation, lectureroom where lectureroom.id=${buildingList[i]} and reservation.lectureRoomId=lectureroom.id`;
+    sql = `SELECT reservation.id as reservationId, lectureroom.lectureRoomId as lectureRoom, reservation.score from reservation, lectureroom where lectureroom.id=${buildingList[i]} and reservation.lectureRoomId=lectureroom.id`;
     var recode = await dbQuery(sql);
     recode = recode.rows;
 
@@ -423,8 +425,24 @@ router.post('/create', async function(req, res, next) {
   var queryResult = queryResult.rows;
   lectureRoom = queryResult[0]["id"];
 
-  sql = `insert into reservation (id, beforeUri, afterUri, beforeTime, afterTime, leaderId, perpose, score, scoreReason, guardId, reservationType, reservationNum, randomStatus, priority, lectureRoomId) values(${num}, null, null, '${startTime}',' ${lastTime}', ${leaderId}, null, null, null, null, 'R', 1, ${randomAfter}, null, ${lectureRoom})`
-  queryResult = await dbQuery(sql);
+  tmp = date.split('-');
+
+  if((tmp[1]+"").length<2){
+    tmp[1] = "0" + tmp[1];
+  }
+  if((tmp[2]+"").length<2){
+    tmp[2] = "0" + tmp[2];
+  }
+
+  dateParser = tmp[0] + tmp[1] + tmp[2];
+  console.log(dateParser, evaluateDate(new Date()));
+  if (dateParser - evaluateDate(new Date()) <= 2) {
+    sql = `insert into reservation (id, beforeUri, afterUri, beforeTime, afterTime, leaderId, perpose, score, scoreReason, guardId, reservationType, reservationNum, randomStatus, priority, lectureRoomId) values(${num}, null, null, '${startTime}',' ${lastTime}', ${leaderId}, null, null, null, null, 'R', null, ${randomAfter}, null, ${lectureRoom})`
+    queryResult = await dbQuery(sql);
+  } else {
+    sql = `insert into reservation (id, beforeUri, afterUri, beforeTime, afterTime, leaderId, perpose, score, scoreReason, guardId, reservationType, reservationNum, randomStatus, priority, lectureRoomId) values(${num}, null, null, '${startTime}',' ${lastTime}', ${leaderId}, null, null, null, null, '1', null, ${randomAfter}, null, ${lectureRoom})`
+    queryResult = await dbQuery(sql);
+  }
 
   for (var i = startTime; i <= lastTime; i++) {
     sql = `insert into reservationdescription (reservationId, date, time) values(${num}, '${date}', ${i})`
@@ -434,9 +452,31 @@ router.post('/create', async function(req, res, next) {
   day = calculateTime(date);
 
   for (var i = startTime; i <= lastTime; i++) {
-    sql = `insert into lectureroomdescription (lectureId, lectureRoomId, lectureTime, time, semester, roomStatus, date, day, reservationId) values(0, ${lectureRoom}, 0, ${i}, '2020-1', 'R', '${date}', '${day}', ${num})`
-    queryResult = await dbQuery(sql);
+    sql = `select roomStatus from lectureroomdescription where time='${i}' and date='${date}' and lectureRoomId = ${lectureRoom}`;
+    let query = await dbQuery(sql);
+    query = query.rows;
+
+    if (query.length != 0) {
+      if (query[0].roomStatus != 'R') {
+        var tmpStatus = parseInt(query[0].roomStatus);
+        tmpStatus = tmpStatus + 1;
+        sql = `update lectureroomdescription set roomStatus=${tmpStatus} where time=${i} and date='${date}' and lectureRoomId = ${lectureRoom}`
+        queryResult = await dbQuery(sql);
+      }
+    } else {
+      if (dateParser - evaluateDate(new Date()) <= 2) {
+        sql = `insert into lectureroomdescription (lectureId, lectureRoomId, lectureTime, time, semester, roomStatus, date, day, reservationId) values(0, ${lectureRoom}, 0, ${i}, '2020-1', 'R', '${date}', '${day}', ${num})`
+        queryResult = await dbQuery(sql);
+      } else {
+        sql = `insert into lectureroomdescription (lectureId, lectureRoomId, lectureTime, time, semester, roomStatus, date, day, reservationId) values(0, ${lectureRoom}, 0, ${i}, '2020-1', '1', '${date}', '${day}', ${num})`
+        queryResult = await dbQuery(sql);
+      }
+    }
   }
+
+  sql = `insert into userreservationlist (reservationId, userId) values(${num}, ${leaderId})`
+  queryResult = await dbQuery(sql);
+
 
   sql = `insert into userreservationlist(reservationId, userId) values(${num}, ${leaderId})`
   queryResult = await dbQuery(sql);
