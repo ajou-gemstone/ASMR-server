@@ -168,7 +168,7 @@ router.get('/myInfo', async function(req, res, next) {
   var resultArray = new Array();
   var resultList = new Array();
 
-  let sql = `select reservationId from userreservationlist where userId=${userId}`;
+  let sql = `select userreservationlist.reservationId from reservation, userreservationlist where reservation.id=userreservationlist.reservationId and userreservationlist.userId=${userId} and reservation.leaderId=${userId}`;
   var recodes = await dbQuery(sql);
   recodes = recodes.rows;
 
@@ -437,6 +437,9 @@ router.post('/create', async function(req, res, next) {
     sql = `insert into lectureroomdescription (lectureId, lectureRoomId, lectureTime, time, semester, roomStatus, date, day, reservationId) values(0, ${lectureRoom}, 0, ${i}, '2020-1', 'R', '${date}', '${day}', ${num})`
     queryResult = await dbQuery(sql);
   }
+
+  sql = `insert into userreservationlist(reservationId, userId) values(${num}, ${leaderId})`
+  queryResult = await dbQuery(sql);
 
   res.json({
     'reservationId': num
