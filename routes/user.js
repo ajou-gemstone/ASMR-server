@@ -102,7 +102,7 @@ router.post('/email', async function(req, res, next) {
     var mailOptions = {
       from: 'hjw9504@ajou.ac.kr',
       to: email,
-      subject: 'Sending Email using Node.js[nodemailer]',
+      subject: 'ASMR 인증번호',
       text: `다음 내용을 입력해주세요! ${result}`
     };
 
@@ -132,6 +132,8 @@ router.post('/signup', async function(req, res, next) {
   var studentNumber = req.body.studentNumber;
   var email = req.body.email;
   var lecture = req.body.lecture;
+  var lectureCode = req.body.lectureCode;
+
   var num;
   var lectureList = new Array();
   var lectureArray = new Array();
@@ -155,7 +157,7 @@ router.post('/signup', async function(req, res, next) {
   recodes = await dbQuery(sql);
 
   for (var i = 0; i < lecture.length; i++) {
-    sql = `select id from lecture where lectureName='${lecture[i]}'`
+    sql = `select id from lecture where lectureName='${lecture[i]}' and lectureCode='${lectureCode[i]}'`
     recodes = await dbQuery(sql);
     recodes = recodes.rows;
     lectureList.push(recodes[0].id);

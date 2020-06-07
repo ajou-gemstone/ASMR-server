@@ -3,6 +3,72 @@ var router = express.Router();
 var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var dbQuery = require("../database/promiseQuery.js");
+var admin = require("firebase-admin");
+var serviceAccount = require("../asmr-799cf-firebase-adminsdk-57wam-7a9f28cc26.json");
+
+/* GET home page. */
+router.get('/get', async function(req, res, next) {
+  var groupId = req.query.groupId;
+  var userId = req.query.userId;
+
+  var chatting = [];
+
+  let sql = `select chatroomdetail.textBody as message, chatroomdetail.userId, chatroomdetail.regDate from chatroom, chatroomdetail where chatroom.id=chatroomdetail.chatRoomId and chatroom.studyId=${groupId}`;
+  let recodes = await dbQuery(sql);
+  recodes = recodes.rows;
+
+  sql = `select leaderId from study where id=${groupId}`;
+  let recode = await dbQuery(sql);
+  recode = recode.rows;
+
+  sql = `select regDate from userstudylist where studyId=${groupId} and userId=${userId}`;
+  let queryResult = await dbQuery(sql);
+  queryResult = queryResult.rows;
+
+  for (var i = 0; i < recodes.length; i++) {
+    sql = `select name from user where id=${recodes[i].userId}`;
+    let query = await dbQuery(sql);
+    query = query.rows;
+
+    if (recodes[i].userId == recode[0].leaderId) {
+      recodes[i].leader = 1;
+      recodes[i].name = query[0].name;
+    } else {
+      recodes[i].leader = 0;
+      recodes[i].name = query[0].name;
+    }
+  }
+
+  for (var i = 0; i < recodes.length; i++) {
+    if(recodes[i].regDate>=queryResult[0].regDate){
+      chatting.push(recodes[i])
+    }
+  }
+
+  res.json(
+    chatting
+  );
+});
+
+router.post('/post', async function(req, res, next) {
+  var groupId = req.body.groupId;
+  var userId = req.body.userId;
+  var message = req.body.message;
+
+  var date = new Date();
+
+  let sql = `select id, title from chatroom where studyId=${groupId}`;
+  let recodes = await dbQuery(sql);
+  recodes = recodes.rows;
+
+  sql = `insert into chatroomdetail(chatRoomId, textBody, userId, regDate) values(${recodes[0].id}, '${message}', ${userId}, '${date}')`;
+  let recode = await dbQuery(sql);
+
+  res.json({
+    response: 'success'
+  });
+});
 
 // io.sockets.on('connection', function(socket) {
 //   console.log('user connected: ', socket.id);
@@ -76,10 +142,5 @@ var io = require('socket.io')(http);
 //     console.log('user disconnected: ', socket.id);
 //   })
 // });
-
-/* GET home page. */
-router.get('/', function(req, res, next) {
-
-});
 
 module.exports = router;

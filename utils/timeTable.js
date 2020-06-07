@@ -8,13 +8,14 @@ function timeTable(tableList, startTime, lastTime) {
   startTime = parseInt(startTime);
   lastTime = parseInt(lastTime);
 
-  timeTable = timeTable.splice(startTime, lastTime + 1);
+  timeTable = timeTable.splice(startTime, lastTime-startTime+1);
+
   var tableArray = new Array();
   var j = 0;
   var search;
   var resultArray = '';
 
-  for(j=startTime;j<=lastTime;j++){
+  for(j=0;j<=lastTime-startTime;j++){
     tableArray.push('A')
   }
 

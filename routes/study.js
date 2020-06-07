@@ -127,6 +127,7 @@ router.post('/create', async function(req, res, next) {
   var num;
   var tagArray = new Array();
   var chatNum;
+  var date = new Date();
 
   if (typeof(tagName) == 'string') {
     tagArray.push(tagName);
@@ -155,10 +156,10 @@ router.post('/create', async function(req, res, next) {
     recodes = await dbQuery(sql);
   }
 
-  sql = `insert into userstudylist(studyId, userId, confirm) values(${num}, '${leaderId}', 1)`;
+  sql = `insert into userstudylist(studyId, userId, confirm, regDate, chatNum, current) values(${num}, '${leaderId}', 1, '${date}', 0, 0)`;
   recodes = await dbQuery(sql);
 
-  sql = `insert into chatroom(id, title) values(${chatNum}, '${title}')`;
+  sql = `insert into chatroom(id, title, studyId) values(${chatNum}, '${title}', ${num})`;
   recodes = await dbQuery(sql);
 
   res.json({
@@ -169,8 +170,9 @@ router.post('/create', async function(req, res, next) {
 router.post('/register', async function(req, res, next) {
   var groupId = req.body.groupId;
   var userId = req.body.userId;
+  var date = new Date()
 
-  let sql = `insert into userstudylist(studyId, userId, confirm) values(${groupId}, ${userId}, 0)`;
+  let sql = `insert into userstudylist(studyId, userId, confirm, regDate, chatNum, current) values(${groupId}, ${userId}, 0, '${date}', 0, 0)`;
   let recodes = await dbQuery(sql);
 
   sql = `select user.token from user, study where study.id=${groupId} and user.id=study.leaderId`;
@@ -191,8 +193,8 @@ router.post('/register', async function(req, res, next) {
   var fcm_message = {
 
     notification: {
-      title: '여소해주세요', //여기에 알림 목적을 작성
-      body: '확인 메세지'
+      title: '새 모임 신청이 있습니다.', //여기에 알림 목적을 작성
+      body: '새 모임 신청이 있습니다.'
     },
     data: {
       fileno: '1',
@@ -232,6 +234,9 @@ router.post('/edit', async function(req, res, next) {
   let sql = `update study set title='${title}', textBody='${textBody}', studyGroupNumTotal='${studyGroupNumTot}' where id=${groupId}`;
   let recodes = await dbQuery(sql);
 
+  sql = `update chatroom set title='${title}' where studyId=${groupId}`;
+  recodes = await dbQuery(sql);
+
   sql = `delete from studytag where studyId=${groupId}`;
   recodes = await dbQuery(sql);
 
@@ -248,8 +253,9 @@ router.post('/edit', async function(req, res, next) {
 router.post('/accept', async function(req, res, next) {
   var groupId = req.body.groupId;
   var userId = req.body.userId;
+  var date = new Date();
 
-  let sql = `update userstudylist set confirm=1 where studyId=${groupId} and userId=${userId}`;
+  let sql = `update userstudylist set confirm=1, regDate='${date}' where studyId=${groupId} and userId=${userId}`;
   let recodes = await dbQuery(sql);
 
   sql = `update study set studyGroupNumCurrent = studyGroupNumCurrent+1 where id=${groupId}`;
@@ -273,8 +279,8 @@ router.post('/accept', async function(req, res, next) {
   var fcm_message = {
 
     notification: {
-      title: '여소해주세요', //여기에 알림 목적을 작성
-      body: '수락되었습니다.'
+      title: '신청이 수락되었습니다.', //여기에 알림 목적을 작성
+      body: '신청이 수락되었습니다.'
     },
     data: {
       fileno: '1',
@@ -323,8 +329,8 @@ router.post('/reject', async function(req, res, next) {
   var fcm_message = {
 
     notification: {
-      title: '여소해주세요', //여기에 알림 목적을 작성
-      body: '다음 기회에'
+      title: '신청이 거절되었습니다.', //여기에 알림 목적을 작성
+      body: '신청이 거절되었습니다.'
     },
     data: {
       fileno: '1',
