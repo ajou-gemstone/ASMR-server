@@ -559,9 +559,22 @@ router.post('/afterImage', async function(req, res, next) {
 
 router.post('/delete', async function(req, res, next) {
   var reservationId = req.body.reservationId;
+  var score = req.body.score;
+  let sql, queryResult;
 
-  let sql = `delete from userreservationlist where reservationId=${reservationId}`;
-  var queryResult = await dbQuery(sql);
+  score = parseInt(score);
+  
+  sql = `select leaderId from reservation where id=${reservationId}`;
+  queryResult = await dbQuery(sql);
+  queryResult = queryResult.rows;
+
+  if(score==1){
+    sql = `update user set score=score+1 where id=${queryResult[0].leaderId}`;
+    queryResult = await dbQuery(sql);
+  }
+
+  sql = `delete from userreservationlist where reservationId=${reservationId}`;
+  queryResult = await dbQuery(sql);
 
   sql = `delete from reservationdescription where reservationId=${reservationId}`;
   queryResult = await dbQuery(sql);
@@ -581,11 +594,20 @@ router.post('/saveScore', async function(req, res, next) {
   var scoreReason = req.body.scoreReason;
   var guardId = req.body.guardId;
 
-  let sql = `update reservation set score = '${score}', scoreReason = '${scoreReason}', guardId = '${guardId}' where id=${reservationId}`;
-  var queryResult = await dbQuery(sql);
+  score = parseInt(score);
 
-  sql = `update user set score = '${score}' where id=${leaderId}`;
-  queryResult = await dbQuery(sql);
+  if(score==1){
+    let sql = `update reservation set score = '${score}', scoreReason = '${scoreReason}', guardId = '${guardId}' where id=${reservationId}`;
+    var queryResult = await dbQuery(sql);
+
+    sql = `update user set score = score+1 where id=${leaderId}`;
+    queryResult = await dbQuery(sql);
+  }
+
+  else{
+    let sql = `update reservation set score = '${score}', scoreReason = '${scoreReason}', guardId = '${guardId}' where id=${reservationId}`;
+    var queryResult = await dbQuery(sql);
+  }
 
   res.json({
     response: 'success'

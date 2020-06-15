@@ -191,14 +191,12 @@ router.post('/register', async function(req, res, next) {
   //-----------
   //메세지 작성 부분
   var fcm_message = {
-
-    notification: {
-      title: '새 모임 신청이 있습니다.', //여기에 알림 목적을 작성
-      body: '새 모임 신청이 있습니다.'
-    },
     data: {
       fileno: '1',
-      style: 'good'
+      style: 'good',
+      title: '새 모임 신청이 있습니다.', //여기에 알림 목적을 작성
+      body: '새 모임 신청이 있습니다.',
+      groupId: groupId+""
     },
     token: fcm_target_token
   }
@@ -277,14 +275,12 @@ router.post('/accept', async function(req, res, next) {
   //-----------
   //메세지 작성 부분
   var fcm_message = {
-
-    notification: {
-      title: '신청이 수락되었습니다.', //여기에 알림 목적을 작성
-      body: '신청이 수락되었습니다.'
-    },
     data: {
       fileno: '1',
-      style: 'good'
+      style: 'good',
+      title: '신청이 수락되었습니다.', //여기에 알림 목적을 작성
+      body: '신청이 수락되었습니다.',
+      groupId: groupId
     },
     token: fcm_target_token
   }
@@ -327,14 +323,12 @@ router.post('/reject', async function(req, res, next) {
   //-----------
   //메세지 작성 부분
   var fcm_message = {
-
-    notification: {
-      title: '신청이 거절되었습니다.', //여기에 알림 목적을 작성
-      body: '신청이 거절되었습니다.'
-    },
     data: {
       fileno: '1',
-      style: 'good'
+      style: 'good',
+      title: '신청이 거절되었습니다.', //여기에 알림 목적을 작성
+      body: '신청이 거절되었습니다.',
+      groupId: groupId+""
     },
     token: fcm_target_token
   }

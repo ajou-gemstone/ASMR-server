@@ -36,4 +36,54 @@ router.post('/update', async function(req, res, next) {
   });
 });
 
+router.get('/time', async function(req, res, next) {
+  var groupId = req.query.groupId;
+  var userArray = new Array();
+  var timeArray = new Array();
+  var timeObject = new Object();
+  var resultArray = new Array();
+
+  var day = ['A', 'B', 'C', 'D', 'E', 'F'];
+  
+  for (var i = 0; i < day.length; i++) {
+    for (var j = 0; j < 28; j++) {
+      timeObject[`${day[i]}${j}`] = 0
+    }
+  }
+
+  let sql = `select userId from userstudylist where studyId='${groupId}'`;
+  let recodes = await dbQuery(sql);
+  recodes = recodes.rows;
+
+  for (var i = 0; i < recodes.length; i++) {
+    userArray.push(recodes[i].userId);
+  }
+
+  for (var i = 0; i < userArray.length; i++) {
+    sql = `select time from timetable where userId='${userArray[i]}'`;
+    recodes = await dbQuery(sql);
+    recodes = recodes.rows;
+
+    for (var j = 0; j < recodes.length; j++) {
+      timeArray.push(recodes[j].time)
+    }
+
+    for (var j = 0; j < timeArray.length; j++) {
+      if (timeArray[j] in timeObject) {
+        timeObject[timeArray[j]] = timeObject[timeArray[j]] + 1;
+      }
+    }
+
+    timeArray = [];
+  }
+
+  for(key in timeObject){
+    if(timeObject[key]!=0){
+        resultArray.push({contents: timeObject[key], time: key});
+    }
+  }
+
+  res.json(resultArray);
+});
+
 module.exports = router;

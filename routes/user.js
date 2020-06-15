@@ -10,7 +10,7 @@ router.get('/', async function(req, res, next) {
   var userId = req.query.userId;
   var lectureList = new Array();
 
-  let sql = `select name, userType, email, studentNum from user where id=${userId}`
+  let sql = `select name, userType, email, studentNum, score from user where id=${userId}`
   let recodes = await dbQuery(sql);
   recodes = recodes.rows;
 
@@ -153,7 +153,7 @@ router.post('/signup', async function(req, res, next) {
   let salt = Math.round((new Date().valueOf() * Math.random())) + "";
   let hashPassword = crypto.createHash("sha512").update(password + salt).digest("hex");
 
-  sql = `insert into user(id, name, userId, userPassword, email, userType, photo, phoneNumber, score, studentNum, salt, token) values(${num}, '${name}', '${userId}', '${hashPassword}', '${email}', 0, null, null, null, '${studentNumber}', '${salt}', null)`
+  sql = `insert into user(id, name, userId, userPassword, email, userType, photo, phoneNumber, score, studentNum, salt, token) values(${num}, '${name}', '${userId}', '${hashPassword}', '${email}', 0, null, null, 0, '${studentNumber}', '${salt}', null)`
   recodes = await dbQuery(sql);
 
   for (var i = 0; i < lecture.length; i++) {

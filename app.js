@@ -137,11 +137,13 @@ const j = schedule.scheduleJob('00 00 00 * * *', async function(){
         var fcm_message = {
           notification: {
             title: '새로운 예약 알림입니다', //여기에 알림 목적을 작성
-            body: `선지망 후추첨 예약이 확정되었습니다.`
+            body: `선지망 후추첨 예약이 확정되었습니다.`,
+            id: 1
           },
           data: {
             fileno: '1',
-            style: 'good'
+            style: 'good',
+            userId: "1"
           },
           token: fcm_target_token
         }
@@ -229,14 +231,14 @@ app.io.sockets.on('connection', function(socket) {
     let sql = `update userstudylist set chatNum=0 where studyId=${text.groupId} and userId=${text.userId}`;
     let recodes = await dbQuery(sql);
 
-    sql = `select id, title from chatroom where studyId=${text.groupId}`;
+    sql = `select chatroom.id, chatroom.title, study.leaderId from chatroom, study where chatroom.studyId=${text.groupId} and study.id=chatroom.studyId`;
     recodes = await dbQuery(sql);
     recodes = recodes.rows;
 
     sql = `update userstudylist set chatNum=chatNum+1 where studyId=${text.groupId} and userId!=${text.userId}`;
     recode = await dbQuery(sql);
 
-    sql = `select user.token, userstudylist.chatNum, userstudylist.current from user, userstudylist where user.id=userstudylist.userId and studyId=${text.groupId}`;
+    sql = `select user.token, user.name, userstudylist.chatNum, userstudylist.current from user, userstudylist where user.id=userstudylist.userId and studyId=${text.groupId}`;
     recode = await dbQuery(sql);
     recode = recode.rows;
 
@@ -250,17 +252,26 @@ app.io.sockets.on('connection', function(socket) {
         }
 
         var fcm_target_token = recode[i].token;
+        var leaderormember;
 
+        if(leaderormember==recodes[0].leaderId){
+          leaderormember=1;
+        }
+        else{
+          leaderormember=0;
+        }
         //-----------
         //메세지 작성 부분
         var fcm_message = {
-          notification: {
-            title: '새로운 메시지 알림입니다', //여기에 알림 목적을 작성
-            body: `"'${recodes[0].title}'모임"에서 새 메시지가 도착했습니다.`
-          },
           data: {
             fileno: '1',
-            style: 'good'
+            style: 'good',
+            username: recode[0].name,
+            leaderormember: leaderormember+"",
+            grouptitle: recodes[0].title,
+            groupId: text.groupId+"",
+            title: '새로운 메시지 알림입니다', //여기에 알림 목적을 작성
+            body: `"'${recodes[0].title}'모임"에서 새 메시지가 도착했습니다.`,
           },
           token: fcm_target_token
         }
