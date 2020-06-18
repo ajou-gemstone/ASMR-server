@@ -21,10 +21,10 @@ var serviceAccount = require("./asmr-799cf-firebase-adminsdk-57wam-7a9f28cc26.js
 var evaluateReservation = require('./utils/evaluateReservation');
 var evaluateDate = require('./utils/date');
 
-const j = schedule.scheduleJob('00 00 00 * * *', async function(){
+const j = schedule.scheduleJob('00 00 00 * * *', async function() {
   var date = new Date();
   var year = date.getFullYear();
-  var month = date.getMonth()+1;
+  var month = date.getMonth() + 1;
   var day = date.getDate();
   var reservationArray = new Array();
   var timeList = new Array();
@@ -32,13 +32,13 @@ const j = schedule.scheduleJob('00 00 00 * * *', async function(){
   var reservationList = new Array();
   var timelist = new Array();
 
-  day = parseInt(day)+1;
+  day = parseInt(day) + 1;
 
-  if((month+"").length<2){
+  if ((month + "").length < 2) {
     month = "0" + month;
   }
 
-  if((day+"").length<2){
+  if ((day + "").length < 2) {
     day = "0" + day;
   }
 
@@ -46,20 +46,21 @@ const j = schedule.scheduleJob('00 00 00 * * *', async function(){
   month = month.toString();
   day = day.toString();
 
-  date = year+"-"+month+"-"+day;
+  date = year + "-" + month + "-" + day;
+  date = "2020-06-24";
 
   let sql = `select reservation.id from reservation, reservationdescription where reservation.id=reservationdescription.reservationId and reservationdescription.date='${date}'`;
   let recodes = await dbQuery(sql);
   recodes = recodes.rows;
 
-  if(recodes.length!=0){
-    for(var i=0;i<recodes.length;i++){
+  if (recodes.length != 0) {
+    for (var i = 0; i < recodes.length; i++) {
       reservationArray.push(recodes[i].id);
     }
 
     reservationArray = Array.from(new Set(reservationArray));
 
-    for(var i=0;i<reservationArray.length;i++){
+    for (var i = 0; i < reservationArray.length; i++) {
       sql = `select time from reservationdescription where reservationdescription.reservationId=${reservationArray[i]}`;
       let recode = await dbQuery(sql);
       recode = recode.rows;
@@ -73,7 +74,11 @@ const j = schedule.scheduleJob('00 00 00 * * *', async function(){
         return a - b;
       });
 
-      reservationList.push({id: reservationArray[i], startTime: timeList[0], lastTime: timeList[timeList.length - 1]});
+      reservationList.push({
+        id: reservationArray[i],
+        startTime: timeList[0],
+        lastTime: timeList[timeList.length - 1]
+      });
       timeList = [];
     }
 
@@ -83,10 +88,10 @@ const j = schedule.scheduleJob('00 00 00 * * *', async function(){
 
     var result = new Array();
 
-    result = evaluateReservation(reservationList, time[0], time[time.length-1]);
+    result = evaluateReservation(reservationList, time[0], time[time.length - 1]);
 
-    for(var i=0;i<reservationArray.length;i++){
-      if(result.indexOf(reservationArray[i]) != -1){
+    for (var i = 0; i < reservationArray.length; i++) {
+      if (result.indexOf(reservationArray[i]) != -1) {
         sql = `update reservation set reservationType='R' where id=${reservationArray[i]}`;
         let query = await dbQuery(sql);
 
@@ -110,10 +115,10 @@ const j = schedule.scheduleJob('00 00 00 * * *', async function(){
         });
 
         var startTime = parseInt(timelist[0]);
-        var lastTime = parseInt(timelist[timelist.length-1]);
+        var lastTime = parseInt(timelist[timelist.length - 1]);
         timelist = [];
 
-        for(var j=startTime;j<=lastTime;j++){
+        for (var j = startTime; j <= lastTime; j++) {
           sql = `insert into lectureroomdescription (lectureId, lectureRoomId, lectureTime, time, semester, roomStatus, date, day, reservationId) values(0, '${queryResult[0].lectureRoomId}', 0, '${j}', '2020-1', 'R', '${date}', '${queryResult[0].day}', ${reservationArray[i]})`;
           query = await dbQuery(sql);
           query = query.rows;
@@ -135,15 +140,12 @@ const j = schedule.scheduleJob('00 00 00 * * *', async function(){
         //-----------
         //메세지 작성 부분
         var fcm_message = {
-          notification: {
-            title: '새로운 예약 알림입니다', //여기에 알림 목적을 작성
-            body: `선지망 후추첨 예약이 확정되었습니다.`,
-            id: 1
-          },
           data: {
             fileno: '1',
             style: 'good',
-            userId: "1"
+            userId: "1",
+            title: '새로운 예약 알림입니다', //여기에 알림 목적을 작성
+            body: `선지망 후추첨 예약이 확정되었습니다.`
           },
           token: fcm_target_token
         }
@@ -157,8 +159,7 @@ const j = schedule.scheduleJob('00 00 00 * * *', async function(){
               console.error('Firebase initialization error raised', error.stack)
             }
           });
-      }
-      else{
+      } else {
         sql = `select user.token from user, reservation where reservation.id=${reservationArray[i]} and user.id=reservation.leaderId`;
         let query = await dbQuery(sql);
         query = query.rows;
@@ -175,13 +176,11 @@ const j = schedule.scheduleJob('00 00 00 * * *', async function(){
         //-----------
         //메세지 작성 부분
         var fcm_message = {
-          notification: {
-            title: '새로운 예약 알림입니다', //여기에 알림 목적을 작성
-            body: `선지망 후추첨 예약이 탈락되었습니다.`
-          },
           data: {
             fileno: '1',
-            style: 'good'
+            style: 'good',
+            title: '새로운 예약 알림입니다', //여기에 알림 목적을 작성
+            body: `선지망 후추첨 예약이 탈락되었습니다.`
           },
           token: fcm_target_token
         }
@@ -196,8 +195,8 @@ const j = schedule.scheduleJob('00 00 00 * * *', async function(){
             }
           });
 
-          sql = `delete from reservation where id=${reservationArray[i]}`;
-          query = await dbQuery(sql);
+        sql = `delete from reservation where id=${reservationArray[i]}`;
+        query = await dbQuery(sql);
       }
     }
   }
@@ -217,10 +216,19 @@ app.io.sockets.on('connection', function(socket) {
   socket.on('join', async function(text) {
     socket.join(text.roomname);
 
-    text.roomnum = parseInt(text.roomnum)+1;
+    text.roomnum = parseInt(text.roomnum) + 1;
 
     let sql = `update userstudylist set chatNum=0, current=1 where studyId=${text.groupId} and userId=${text.userId}`;
     let recodes = await dbQuery(sql);
+
+    sql = `update chatroom set currentNum=currentNum+1 where studyId=${text.groupId}`;
+    recodes = await dbQuery(sql);
+
+    sql = `select currentNum from chatroom where studyId=${text.groupId}`;
+    recodes = await dbQuery(sql);
+    recodes = recodes.rows;
+
+    text.currentNum = recodes[0].currentNum;
 
     app.io.sockets.in(text.roomname).emit('enter', text);
   });
@@ -242,8 +250,8 @@ app.io.sockets.on('connection', function(socket) {
     recode = await dbQuery(sql);
     recode = recode.rows;
 
-    for(var i=0;i<recode.length;i++){
-      if(recode[i].chatNum==1 && recode[i].current==0){
+    for (var i = 0; i < recode.length; i++) {
+      if (recode[i].chatNum == 1 && recode[i].current == 0) {
         if (!admin.apps.length) {
           admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
@@ -254,11 +262,10 @@ app.io.sockets.on('connection', function(socket) {
         var fcm_target_token = recode[i].token;
         var leaderormember;
 
-        if(leaderormember==recodes[0].leaderId){
-          leaderormember=1;
-        }
-        else{
-          leaderormember=0;
+        if (leaderormember == recodes[0].leaderId) {
+          leaderormember = 1;
+        } else {
+          leaderormember = 0;
         }
         //-----------
         //메세지 작성 부분
@@ -267,9 +274,9 @@ app.io.sockets.on('connection', function(socket) {
             fileno: '1',
             style: 'good',
             username: recode[0].name,
-            leaderormember: leaderormember+"",
+            leaderormember: leaderormember + "",
             grouptitle: recodes[0].title,
-            groupId: text.groupId+"",
+            groupId: text.groupId + "",
             title: '새로운 메시지 알림입니다', //여기에 알림 목적을 작성
             body: `"'${recodes[0].title}'모임"에서 새 메시지가 도착했습니다.`,
           },
@@ -293,10 +300,19 @@ app.io.sockets.on('connection', function(socket) {
 
   socket.on('leave', async function(text) {
     socket.leave(text.roomname);
-    text.roomnum = parseInt(text.roomnum)-1;
+    text.roomnum = parseInt(text.roomnum) - 1;
 
     let sql = `update userstudylist set chatNum=0, current=0 where studyId=${text.groupId} and userId=${text.userId}`;
     let recodes = await dbQuery(sql);
+
+    sql = `update chatroom set currentNum=currentNum-1 where studyId=${text.groupId}`;
+    recodes = await dbQuery(sql);
+
+    sql = `select currentNum from chatroom where studyId=${text.groupId}`;
+    recodes = await dbQuery(sql);
+    recodes = recodes.rows;
+
+    text.currentNum = recodes[0].currentNum;
 
     app.io.sockets.in(text.roomname).emit('exit', text);
   });

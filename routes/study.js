@@ -159,7 +159,7 @@ router.post('/create', async function(req, res, next) {
   sql = `insert into userstudylist(studyId, userId, confirm, regDate, chatNum, current) values(${num}, '${leaderId}', 1, '${date}', 0, 0)`;
   recodes = await dbQuery(sql);
 
-  sql = `insert into chatroom(id, title, studyId) values(${chatNum}, '${title}', ${num})`;
+  sql = `insert into chatroom(id, title, studyId, currentNum, totalNum) values(${chatNum}, '${title}', ${num}, 0, 0)`;
   recodes = await dbQuery(sql);
 
   res.json({

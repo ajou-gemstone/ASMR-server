@@ -6,6 +6,7 @@ var io = require('socket.io')(http);
 var dbQuery = require("../database/promiseQuery.js");
 var admin = require("firebase-admin");
 var serviceAccount = require("../asmr-799cf-firebase-adminsdk-57wam-7a9f28cc26.json");
+var moment = require('moment');
 
 /* GET home page. */
 router.get('/get', async function(req, res, next) {
@@ -41,7 +42,10 @@ router.get('/get', async function(req, res, next) {
   }
 
   for (var i = 0; i < recodes.length; i++) {
-    if(recodes[i].regDate>=queryResult[0].regDate){
+    var current = moment(recodes[i].regDate).format();
+    var regDate = moment(queryResult[0].regDate).format();
+
+    if(current>=regDate){
       chatting.push(recodes[i])
     }
   }

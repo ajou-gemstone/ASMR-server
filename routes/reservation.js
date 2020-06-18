@@ -327,6 +327,24 @@ router.get('/buildingInfo', async function(req, res, next) {
   var userList = new Array();
   var count = 0;
   var resultarray = new Array();
+  var date = new Date();
+  var year = date.getFullYear();
+  var month = date.getMonth() + 1;
+  var day = date.getDate();
+
+  if ((month + "").length < 2) {
+    month = "0" + month;
+  }
+
+  if ((day + "").length < 2) {
+    day = "0" + day;
+  }
+
+  year = year.toString();
+  month = month.toString();
+  day = day.toString();
+
+  date = year + "-" + month + "-" + day;
 
   var time = timeParser();
 
@@ -351,7 +369,7 @@ router.get('/buildingInfo', async function(req, res, next) {
       queryList = await dbQuery(sql);
       queryList = queryList.rows;
 
-      sql = `select time from reservationdescription where reservationid=${reservationList[i]}`;
+      sql = `select time, date from reservationdescription where reservationid=${reservationList[i]}`;
       var queryResult = await dbQuery(sql);
       queryResult = queryResult.rows;
 
@@ -377,6 +395,7 @@ router.get('/buildingInfo', async function(req, res, next) {
       queryList[0].startTime = timeList[0];
       queryList[0].lastTime = timeList[timeList.length - 1];
       queryList[0].userId = userList;
+      queryList[0].date = queryResult[0].date
 
       resultArray.push(queryList[0]);
 
@@ -388,12 +407,34 @@ router.get('/buildingInfo', async function(req, res, next) {
 
   for (var i = 0; i < resultArray.length; i++) {
     for (var j = resultArray[i].startTime; j <= resultArray[i].lastTime; j++) {
-      if (j == time) {
+      var tmpDate = resultArray[i].date;
+
+      year = tmpDate.getFullYear();
+      month = tmpDate.getMonth() + 1;
+      day = tmpDate.getDate();
+
+      if ((month + "").length < 2) {
+        month = "0" + month;
+      }
+
+      if ((day + "").length < 2) {
+        day = "0" + day;
+      }
+
+      year = year.toString();
+      month = month.toString();
+      day = day.toString();
+
+      tmpDate = year + "-" + month + "-" + day;
+
+      if (j == time && tmpDate==date) {
         count++;
         break;
       }
     }
+
     if (count != 0) {
+      delete resultArray[i].date;
       resultarray.push(resultArray[i]);
     }
     count = 0;
@@ -563,7 +604,7 @@ router.post('/delete', async function(req, res, next) {
   let sql, queryResult;
 
   score = parseInt(score);
-  
+
   sql = `select leaderId from reservation where id=${reservationId}`;
   queryResult = await dbQuery(sql);
   queryResult = queryResult.rows;
