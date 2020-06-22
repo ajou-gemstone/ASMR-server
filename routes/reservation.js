@@ -7,6 +7,9 @@ var timeTable = require('../utils/timeTable');
 var evaluateDate = require('../utils/date');
 var nullCheck = require('../utils/nullCheck');
 var timeParser = require('../utils/timeParser');
+var evaluateReservation = require('../utils/evaluateReservation');
+var admin = require("firebase-admin");
+var serviceAccount = require("../asmr-799cf-firebase-adminsdk-57wam-7a9f28cc26.json");
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -427,7 +430,7 @@ router.get('/buildingInfo', async function(req, res, next) {
 
       tmpDate = year + "-" + month + "-" + day;
 
-      if (j == time && tmpDate==date) {
+      if (j == time && tmpDate == date) {
         count++;
         break;
       }
@@ -471,10 +474,10 @@ router.post('/create', async function(req, res, next) {
 
   leaderId = parseInt(leaderId);
 
-  if (randomAfter == true) {
-    randomAfter = 0;
-  } else {
+  if (randomAfter == 'true') {
     randomAfter = 1;
+  } else {
+    randomAfter = 0;
   }
 
   let sql = 'select max(id) as num from reservation';
@@ -609,9 +612,42 @@ router.post('/delete', async function(req, res, next) {
   queryResult = await dbQuery(sql);
   queryResult = queryResult.rows;
 
-  if(score==1){
+  if (score == 1) {
     sql = `update user set score=score+1 where id=${queryResult[0].leaderId}`;
-    queryResult = await dbQuery(sql);
+    var query = await dbQuery(sql);
+
+    sql = `select token from user where id=${queryResult[0].leaderId}`;
+    query = await dbQuery(sql);
+    query = query.rows;
+
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        //  databaseURL: "https://asmr-799cf.firebaseio.com"
+      });
+    }
+
+    //-----------
+    //메세지 작성 부분
+    var fcm_message = {
+      data: {
+        fileno: '1',
+        style: 'good',
+        title: '새로운 예약 알림입니다', //여기에 알림 목적을 작성
+        body: `강의실 사용 미흡으로 패널티가 추가되었습니다.`
+      },
+      token: query[0].token
+    }
+
+    admin.messaging().send(fcm_message)
+      .then(function(response) {
+        console.log("보내기 성공 메세지" + response);
+      }).catch(function(error) {
+        console.log('보내기 실패 메세지' + error);
+        if (!/already exists/.test(error.message)) {
+          console.error('Firebase initialization error raised', error.stack)
+        }
+      });
   }
 
   sql = `delete from userreservationlist where reservationId=${reservationId}`;
@@ -637,15 +673,46 @@ router.post('/saveScore', async function(req, res, next) {
 
   score = parseInt(score);
 
-  if(score==1){
+  if (score == 1) {
     let sql = `update reservation set score = '${score}', scoreReason = '${scoreReason}', guardId = '${guardId}' where id=${reservationId}`;
     var queryResult = await dbQuery(sql);
 
     sql = `update user set score = score+1 where id=${leaderId}`;
     queryResult = await dbQuery(sql);
-  }
 
-  else{
+    sql = `select token from user where id=${leaderId}`;
+    queryResult = await dbQuery(sql);
+    queryResult = queryResult.rows;
+
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        //  databaseURL: "https://asmr-799cf.firebaseio.com"
+      });
+    }
+
+    //-----------
+    //메세지 작성 부분
+    var fcm_message = {
+      data: {
+        fileno: '1',
+        style: 'good',
+        title: '새로운 예약 알림입니다', //여기에 알림 목적을 작성
+        body: `강의실 사용 미흡으로 패널티가 추가되었습니다.`
+      },
+      token: queryResult[0].token
+    }
+
+    admin.messaging().send(fcm_message)
+      .then(function(response) {
+        console.log("보내기 성공 메세지" + response);
+      }).catch(function(error) {
+        console.log('보내기 실패 메세지' + error);
+        if (!/already exists/.test(error.message)) {
+          console.error('Firebase initialization error raised', error.stack)
+        }
+      });
+  } else {
     let sql = `update reservation set score = '${score}', scoreReason = '${scoreReason}', guardId = '${guardId}' where id=${reservationId}`;
     var queryResult = await dbQuery(sql);
   }
@@ -672,6 +739,282 @@ router.post('/searchStudentId', async function(req, res, next) {
     });
   }
 
+});
+
+router.post('/test', async function(req, res, next) {
+  var date = req.body.date;
+  var reservationArray = new Array();
+  var timeList = new Array();
+  var time = new Array();
+  var reservationList = new Array();
+  var timelist = new Array();
+  var lectureroomList = new Array();
+
+  let sql = `select reservation.id, reservation.lectureRoomId from reservation, reservationdescription where reservation.id=reservationdescription.reservationId and reservationdescription.date='${date}' and reservation.reservationType=1`;
+  let recodes = await dbQuery(sql);
+  recodes = recodes.rows;
+
+  if (recodes.length != 0) {
+    for (var i = 0; i < recodes.length; i++) {
+      lectureroomList.push(recodes[i].lectureRoomId);
+    }
+
+    lectureroomList = Array.from(new Set(lectureroomList));
+
+    for (var a = 0; a < lectureroomList.length; a++) {
+      reservationArray = [];
+
+      for (var j = 0; j < recodes.length; j++) {
+        if(recodes[j].lectureRoomId==lectureroomList[a]){
+          reservationArray.push(recodes[j].id);
+        }
+      }
+
+      reservationArray = Array.from(new Set(reservationArray));
+
+      for (var i = 0; i < reservationArray.length; i++) {
+        sql = `select time from reservationdescription where reservationdescription.reservationId=${reservationArray[i]}`;
+        let recode = await dbQuery(sql);
+        recode = recode.rows;
+
+        for (var j = 0; j < recode.length; j++) {
+          timeList.push(recode[j].time);
+          time.push(recode[j].time);
+        }
+
+        timeList.sort(function(a, b) {
+          return a - b;
+        });
+
+        reservationList.push({
+          id: reservationArray[i],
+          startTime: timeList[0],
+          lastTime: timeList[timeList.length - 1]
+        });
+        timeList = [];
+      }
+
+      time.sort(function(a, b) {
+        return a - b;
+      });
+
+      var result = new Array();
+      result = evaluateReservation(reservationList, parseInt(time[0]), parseInt(time[time.length - 1]));
+
+      reservationList = [];
+
+      for (var i = 0; i < reservationArray.length; i++) {
+        if (result.indexOf(reservationArray[i]) != -1) {
+          sql = `update reservation set reservationType='R' where id=${reservationArray[i]}`;
+          let query = await dbQuery(sql);
+
+          sql = `select * from lectureroomdescription where reservationId=${reservationArray[i]}`;
+          let queryResult = await dbQuery(sql);
+          queryResult = queryResult.rows;
+
+          sql = `delete from lectureroomdescription where reservationId=${reservationArray[i]}`;
+          query = await dbQuery(sql);
+
+          sql = `select time from reservationdescription where reservationId=${reservationArray[i]}`;
+          query = await dbQuery(sql);
+          query = query.rows;
+
+          for (var j = 0; j < query.length; j++) {
+            timelist.push(query[j].time)
+          }
+
+          timelist.sort(function(a, b) {
+            return a - b;
+          });
+
+          var startTime = parseInt(timelist[0]);
+          var lastTime = parseInt(timelist[timelist.length - 1]);
+          timelist = [];
+
+          for (var j = startTime; j <= lastTime; j++) {
+            sql = `insert into lectureroomdescription (lectureId, lectureRoomId, lectureTime, time, semester, roomStatus, date, day, reservationId) values(0, '${queryResult[0].lectureRoomId}', 0, '${j}', '2020-1', 'R', '${date}', '${queryResult[0].day}', ${reservationArray[i]})`;
+            query = await dbQuery(sql);
+            query = query.rows;
+          }
+
+          sql = `select user.token from user, reservation where reservation.id=${reservationArray[i]} and user.id=reservation.leaderId`;
+          query = await dbQuery(sql);
+          query = query.rows;
+
+          if (!admin.apps.length) {
+            admin.initializeApp({
+              credential: admin.credential.cert(serviceAccount),
+              //  databaseURL: "https://asmr-799cf.firebaseio.com"
+            });
+          }
+
+          var fcm_target_token = query[0].token;
+
+          //-----------
+          //메세지 작성 부분
+          var fcm_message = {
+            data: {
+              fileno: '1',
+              style: 'good',
+              userId: "1",
+              title: '새로운 예약 알림입니다', //여기에 알림 목적을 작성
+              body: `선지망 후추첨 예약이 확정되었습니다.`
+            },
+            token: fcm_target_token
+          }
+
+          admin.messaging().send(fcm_message)
+            .then(function(response) {
+              console.log("보내기 성공 메세지" + response);
+            }).catch(function(error) {
+              console.log('보내기 실패 메세지' + error);
+              if (!/already exists/.test(error.message)) {
+                console.error('Firebase initialization error raised', error.stack)
+              }
+            });
+        } else {
+          sql = `select user.token from user, reservation where reservation.id=${reservationArray[i]} and user.id=reservation.leaderId`;
+          let query = await dbQuery(sql);
+          query = query.rows;
+
+          if (!admin.apps.length) {
+            admin.initializeApp({
+              credential: admin.credential.cert(serviceAccount),
+              //  databaseURL: "https://asmr-799cf.firebaseio.com"
+            });
+          }
+
+          var fcm_target_token = query[0].token;
+
+          sql = `delete from lectureroomdescription where reservationId=${reservationArray[i]}`;
+          query = await dbQuery(sql);
+
+          sql = `select randomStatus from reservation where id=${reservationArray[i]}`;
+          query = await dbQuery(sql);
+          query = query.rows;
+
+          var randomStatus = query[0].randomStatus;
+
+          if (randomStatus == 1) {
+            sql = `select time, date from reservationdescription where reservationId=${reservationArray[i]}`;
+            query = await dbQuery(sql);
+            query = query.rows;
+
+            var regDate = query[0].date;
+            var regDay = calculateTime(regDate);
+
+            for (var j = 0; j < query.length; j++) {
+              timeList.push(query[j].time);
+              time.push(query[j].time);
+            }
+
+            timeList.sort(function(a, b) {
+              return a - b;
+            });
+
+            sql = `select id from lectureroom`;
+            query = await dbQuery(sql);
+            query = query.rows;
+
+            var lectureRoomList = new Array();
+
+            for (var l = 0; l < query.length; l++) {
+              lectureRoomList.push(query[l].id);
+            }
+
+            var count = 0;
+            var selectedLectureRoom;
+
+            for (var l = 0; l < lectureRoomList.length; l++) {
+              for (var j = parseInt(timeList[0]); j <= parseInt(timeList[timeList.length - 1]); j++) {
+                sql = `select roomStatus from lectureroomdescription where time='${j}' and day='${regDay}' and (date='${date}' or roomStatus='L') and lectureRoomId=${lectureRoomList[l]}`;
+                query = await dbQuery(sql);
+                query = query.rows;
+
+                if (query.length != 0) {
+                  count++;
+                }
+              }
+              if (count == 0) {
+                selectedLectureRoom = lectureRoomList[l];
+                break;
+              }
+              count = 0;
+            }
+
+            for (var j = parseInt(timeList[0]); j <= parseInt(timeList[timeList.length - 1]); j++) {
+              sql = `insert into lectureroomdescription (lectureId, lectureRoomId, lectureTime, time, semester, roomStatus, date, day, reservationId) values(0, '${selectedLectureRoom}', 0, '${j}', '2020-1', 'R', '${date}', '${regDay}', ${reservationArray[i]})`;
+              query = await dbQuery(sql);
+              query = query.rows;
+            }
+
+            sql = `update reservation set lectureRoomId=${selectedLectureRoom}, reservationType='R' where id=${reservationArray[i]}`;
+            query = await dbQuery(sql);
+
+            sql = `select lectureRoomId from lectureroom where id=${selectedLectureRoom}`;
+            query = await dbQuery(sql);
+            query = query.rows;
+
+            if (!admin.apps.length) {
+              admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount),
+                //  databaseURL: "https://asmr-799cf.firebaseio.com"
+              });
+            }
+
+            //-----------
+            //메세지 작성 부분
+            var fcm_message = {
+              data: {
+                fileno: '1',
+                style: 'good',
+                title: '새로운 예약 알림입니다', //여기에 알림 목적을 작성
+                body: `예약이 탈락되어 ${query[0].lectureRoomId}으로 다시 예약되었습니다.`
+              },
+              token: fcm_target_token
+            }
+
+            admin.messaging().send(fcm_message)
+              .then(function(response) {
+                console.log("보내기 성공 메세지" + response);
+              }).catch(function(error) {
+                console.log('보내기 실패 메세지' + error);
+                if (!/already exists/.test(error.message)) {
+                  console.error('Firebase initialization error raised', error.stack)
+                }
+              });
+          } else {
+            var fcm_message = {
+              data: {
+                fileno: '1',
+                style: 'good',
+                title: '새로운 예약 알림입니다', //여기에 알림 목적을 작성
+                body: `선지망 후추첨 예약이 탈락되었습니다.`
+              },
+              token: fcm_target_token
+            }
+
+            admin.messaging().send(fcm_message)
+              .then(function(response) {
+                console.log("보내기 성공 메세지" + response);
+              }).catch(function(error) {
+                console.log('보내기 실패 메세지' + error);
+                if (!/already exists/.test(error.message)) {
+                  console.error('Firebase initialization error raised', error.stack)
+                }
+              });
+
+            sql = `delete from reservation where id=${reservationArray[i]}`;
+            query = await dbQuery(sql);
+          }
+        }
+      }
+    }
+  }
+
+  res.json({
+    response: 'success'
+  });
 });
 
 module.exports = router;

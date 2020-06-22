@@ -21,7 +21,7 @@ function evaluateReservation(reservationList, timeStart, timeLast) {
   timeStart = 0;
   timeLast = 27;
 
-  var seatOfRes = Array(timeLast - timeStart + 1);
+  var seatOfRes = Array(28);
 
   //문자열로 초기화
   for (var i = 0; i < seatOfRes.length; i++) {
@@ -84,7 +84,7 @@ function evaluateReservation(reservationList, timeStart, timeLast) {
       break;
   }
 
-  var realSeatOfRes = Array(timeLast - timeStart + 1);
+  var realSeatOfRes = Array(28);
   var reservations = new Array();
 
   for (var i = 0; i < realSeatOfRes.length; i++) {
