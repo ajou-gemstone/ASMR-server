@@ -142,7 +142,7 @@ router.post('/signup', async function(req, res, next) {
     lectureArray.push(lecture);
     lecture = lectureArray;
   }
-
+  console.log(lecture);
   let sql = `select max(id) as num from user`;
   let recodes = await dbQuery(sql);
   recodes = recodes.rows;

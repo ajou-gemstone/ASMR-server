@@ -363,7 +363,7 @@ app.io.sockets.on('connection', function(socket) {
     recode = recode.rows;
 
     for (var i = 0; i < recode.length; i++) {
-      if (recode[i].chatNum == 1 && recode[i].current == 0) {
+      if (recode[i].chatNum >= 1 && recode[i].current == 0) {
         if (!admin.apps.length) {
           admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),

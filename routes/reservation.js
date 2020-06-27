@@ -352,7 +352,7 @@ router.get('/buildingInfo', async function(req, res, next) {
   var time = timeParser();
 
   let sql = `select id, lectureRoomId from lectureRoom where buildingName='${buildingName}' and floor='${floor}'`;
-  recodes = await dbQuery(sql);
+  var recodes = await dbQuery(sql);
   recodes = recodes.rows;
 
   for (var l = 0; l < recodes.length; l++) {
@@ -360,7 +360,7 @@ router.get('/buildingInfo', async function(req, res, next) {
     lectureRoomId = recodes[l].lectureRoomId;
 
     sql = `select id from reservation where lectureRoomId=${id}`;
-    recode = await dbQuery(sql);
+    var recode = await dbQuery(sql);
     recode = recode.rows;
 
     for (var i = 0; i < recode.length; i++) {
@@ -372,7 +372,7 @@ router.get('/buildingInfo', async function(req, res, next) {
       queryList = await dbQuery(sql);
       queryList = queryList.rows;
 
-      sql = `select time, date from reservationdescription where reservationid=${reservationList[i]}`;
+      sql = `select time, date from reservationdescription where reservationId=${reservationList[i]}`;
       var queryResult = await dbQuery(sql);
       queryResult = queryResult.rows;
 
@@ -384,7 +384,7 @@ router.get('/buildingInfo', async function(req, res, next) {
         return a - b;
       });
 
-      sql = `select userId from userreservationlist where reservationid=${reservationList[i]}`;
+      sql = `select userId from userreservationlist where reservationId=${reservationList[i]}`;
       var query = await dbQuery(sql);
       query = query.rows;
 
@@ -402,10 +402,10 @@ router.get('/buildingInfo', async function(req, res, next) {
 
       resultArray.push(queryList[0]);
 
-      reservationList = [];
       timeList = [];
       userList = [];
     }
+    reservationList = [];
   }
 
   for (var i = 0; i < resultArray.length; i++) {
