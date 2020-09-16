@@ -348,48 +348,6 @@ router.post('/reject', async function(req, res, next) {
   });
 });
 
-router.post('/position', async function(req, res, next) {
-  var token = req.body.token;
-
-  if (!admin.apps.length) {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      //  databaseURL: "https://asmr-799cf.firebaseio.com"
-    });
-  }
-
-  /** 안드로이드 단말에서 추출한 token값 */
-  // 안드로이드 App이 적절한 구현절차를 통해서 생성해야 하는 값이다.
-  // 안드로이드 단말에서 Node server로 POST방식 전송 후,
-  // Node서버는 이 값을 DB에 보관하고 있으면 된다.
-  var fcm_target_token = token;
-
-  //-----------
-  //메세지 작성 부분
-  var fcm_message = {
-
-    notification: {
-      title: '시범 데이터 발송', //여기에 알림 목적을 작성
-      body: '확인 메세지'
-    },
-    data: {
-      fileno: '1',
-      style: 'good'
-    },
-    token: fcm_target_token
-  }
-
-  admin.messaging().send(fcm_message)
-    .then(function(response) {
-      console.log("보내기 성공 메세지" + response);
-    }).catch(function(error) {
-      console.log('보내기 실패 메세지' + error);
-      if (!/already exists/.test(error.message)) {
-        console.error('Firebase initialization error raised', error.stack)
-      }
-    });
-});
-
 router.post('/:studyId/delete', function(req, res, next) {
   res.json({
     response: 'success'

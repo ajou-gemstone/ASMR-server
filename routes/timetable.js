@@ -13,29 +13,6 @@ router.get('/info', async function(req, res, next) {
   res.json(recodes);
 });
 
-router.post('/update', async function(req, res, next) {
-  var userId = req.body.userId;
-  var info = req.body.info;
-  var infoArray = new Array();
-
-  if (typeof(info) == 'string') {
-    infoArray.push(info);
-    info = infoArray;
-  }
-
-  let sql = `delete from timetable where userId=${userId} and type=2`;
-  let recodes = await dbQuery(sql);
-
-  for (var i = 0; i < info.length; i++) {
-    sql = `insert into timetable(contents, time, userId, type) values('${info[i].contents}', '${info[i].time}', ${userId}, 2)`;
-    recodes = await dbQuery(sql);
-  }
-
-  res.json({
-    response: 'success'
-  });
-});
-
 router.get('/time', async function(req, res, next) {
   var groupId = req.query.groupId;
   var userArray = new Array();
@@ -44,7 +21,7 @@ router.get('/time', async function(req, res, next) {
   var resultArray = new Array();
 
   var day = ['A', 'B', 'C', 'D', 'E', 'F'];
-  
+
   for (var i = 0; i < day.length; i++) {
     for (var j = 0; j < 28; j++) {
       timeObject[`${day[i]}${j}`] = 0
@@ -84,6 +61,29 @@ router.get('/time', async function(req, res, next) {
   }
 
   res.json(resultArray);
+});
+
+router.post('/update', async function(req, res, next) {
+  var userId = req.body.userId;
+  var info = req.body.info;
+  var infoArray = new Array();
+
+  if (typeof(info) == 'string') {
+    infoArray.push(info);
+    info = infoArray;
+  }
+
+  let sql = `delete from timetable where userId=${userId} and type=2`;
+  let recodes = await dbQuery(sql);
+
+  for (var i = 0; i < info.length; i++) {
+    sql = `insert into timetable(contents, time, userId, type) values('${info[i].contents}', '${info[i].time}', ${userId}, 2)`;
+    recodes = await dbQuery(sql);
+  }
+
+  res.json({
+    response: 'success'
+  });
 });
 
 module.exports = router;
