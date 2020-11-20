@@ -14,7 +14,3 @@
 * Backend: Node.js
 
  ![ASMR](https://user-images.githubusercontent.com/62544004/93577352-e8118000-f9d6-11ea-978d-08316a773b1c.png)
- 
- ## Github 주소 (전체 commit 내용입니다.)
- https://github.com/ajou-gemstone/ASMR-server
- 
